@@ -1,0 +1,2251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Monitoramento - Anestesistas</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --bg-main: #1e293b;
+            --bg-card: #0f172a;
+            --bg-input: #1e293b;
+            --text-main: #f1f5f9;
+            --text-title: #f8fafc;
+            --text-sub: #94a3b8;
+            --border-color: #334155;
+            --table-header-bg: #1e293b;
+            --table-row-even: #1e293b;
+            --table-row-odd: #0f172a;
+            --card-dash: #1e293b;
+        }
+
+        body.light-mode {
+            --bg-main: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-input: #ffffff;
+            --text-main: #0f172a;
+            --text-title: #0f172a;
+            --text-sub: #475569;
+            --border-color: #cbd5e1;
+            --table-header-bg: #e2e8f0;
+            --table-row-even: #f8fafc;
+            --table-row-odd: #ffffff;
+            --card-dash: #f8fafc;
+        }
+
+        body { font-family: Arial, sans-serif; margin: 10px; background-color: var(--bg-main); color: var(--text-main); transition: background-color 0.3s, color 0.3s; position: relative; }
+        @media (min-width: 768px) { body { margin: 20px; } }
+
+        h2, h3 { color: var(--text-title); font-size: 1.25rem; }
+        @media (min-width: 768px) { h2, h3 { font-size: 1.5rem; } }
+
+        .container { max-width: 100%; margin: auto; background: var(--bg-card); padding: 12px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5); border: 1px solid var(--border-color); overflow-x: hidden; }
+        @media (min-width: 768px) { .container { padding: 20px; } }
+        
+        .btn { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; width: 100%; margin-bottom: 5px; }
+        @media (min-width: 768px) { .btn { width: auto; padding: 10px 15px; font-size: 14px; margin-bottom: 0; } }
+        .btn-sm { padding: 5px 10px; font-size: 11px; width: auto; }
+        .btn-primary { background-color: #3498db; color: white; }
+        .btn-success { background-color: #2ecc71; color: white; }
+        .btn-danger { background-color: #e74c3c; color: white; }
+        .btn-warning { background-color: #f1c40f; color: #1e293b; }
+        .btn-secondary { background-color: #64748b; color: white; }
+        .btn-purple { background-color: #8e44ad; color: white; }
+        
+        .logo-container { text-align: center; margin: 15px 0; }
+        .logo-img { max-width: 100px; height: auto; }
+        .logo-img-small { max-width: 70px; height: auto; display: block; margin: 0 auto 15px auto; }
+        
+        .header-controls { display: flex; justify-content: flex-start; align-items: center; margin-bottom: 20px; flex-direction: column; gap: 15px; }
+        @media (min-width: 768px) { .header-controls { flex-direction: row; justify-content: flex-start; } }
+        
+        .selector-group { display: flex; align-items: center; gap: 10px; width: auto; flex-wrap: wrap; }
+        .selector-group label { font-weight: bold; color: var(--text-sub); font-size: 12px; }
+
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 10px; min-width: 1000px; }
+        @media (min-width: 768px) { table { font-size: 11px; min-width: 1200px; } }
+        
+        th, td { border: 1px solid var(--border-color); padding: 6px 4px; text-align: center; word-wrap: break-word; overflow-wrap: break-word; }
+        th { background-color: var(--table-header-bg); color: var(--text-main); }
+        tr:nth-child(even) { background-color: var(--table-row-even); }
+        tr:nth-child(odd) { background-color: var(--table-row-odd); }
+
+        .screen { display: none; }
+        .active { display: block; }
+        
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 4px; font-weight: bold; color: var(--text-sub); font-size: 12px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid var(--border-color); border-radius: 4px; background-color: var(--bg-input); color: var(--text-main); font-size: 14px; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #3498db; outline: none; }
+        
+        .login-box { width: 100%; max-width: 400px; margin: 20px auto; background: var(--bg-card); padding: 20px; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.7); border: 1px solid var(--border-color); box-sizing: border-box; }
+        @media (min-width: 768px) { .login-box { margin: 50px auto; padding: 30px; } }
+        
+        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; }
+        .loading-text { margin-top: 15px; color: #ffffff; font-size: 14px; font-weight: bold; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .dashboard-title { text-align: center; color: var(--text-title); margin-bottom: 15px; font-size: 16px; font-weight: bold; }
+        @media (min-width: 768px) { .dashboard-title { font-size: 20px; } }
+        
+        .dash-cards-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 10px; 
+            margin-bottom: 20px; 
+        }
+        @media (min-width: 1024px) { 
+            .dash-cards-grid { 
+                grid-template-columns: repeat(12, minmax(0, 1fr)); 
+                gap: 8px; 
+            } 
+        }
+        
+        .dash-card { background: var(--card-dash); padding: 10px 6px; border-radius: 8px; border: 1px solid var(--border-color); text-align: center; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+        .dash-card .number { font-size: 13px; font-weight: bold; color: #3498db; margin-top: 4px; word-break: break-word; }
+        @media (min-width: 1200px) { .dash-card .number { font-size: 14px; } }
+        .dash-card .label { font-size: 8px; color: var(--text-sub); text-transform: uppercase; font-weight: bold; line-height: 1.1; }
+
+        .secretaria-box { width: 100%; max-width: 500px; margin: 20px auto; background: var(--bg-card); padding: 20px; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.7); border: 1px solid var(--border-color); position: relative; box-sizing: border-box; }
+        @media (min-width: 768px) { .secretaria-box { margin: 30px auto; padding: 30px; } }
+
+        .unidades-container { display: none; margin-top: 15px; text-align: left; }
+        .btn-unidade { display: block; width: 100%; text-align: left; margin-bottom: 8px; padding: 10px; background-color: var(--card-dash); border: 1px solid var(--border-color); border-radius: 4px; font-size: 12px; color: var(--text-sub); font-weight: bold; transition: background 0.2s; }
+        @media (min-width: 768px) { .btn-unidade { font-size: 14px; padding: 12px; } }
+        .btn-unidade:hover { background-color: #475569; color: white; cursor: pointer; }
+
+        .theme-toggle-top { position: fixed; top: 10px; right: 10px; z-index: 1000; display: flex; gap: 6px; align-items: center; }
+        @media (min-width: 768px) { .theme-toggle-top { top: 15px; right: 20px; gap: 8px; } }
+
+        .logs-floating-btn { position: fixed; bottom: 15px; right: 15px; z-index: 999; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border-radius: 30px; padding: 10px 15px; font-size: 11px; display: none; width: auto; margin-bottom: 0; }
+        .lakehouse-floating-btn { position: fixed; bottom: 15px; left: 15px; z-index: 999; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border-radius: 30px; padding: 10px 15px; font-size: 11px; display: none; background-color: #8e44ad; color: white; width: auto; margin-bottom: 0; }
+        
+        .pwd-floating-btn { position: fixed; bottom: 15px; left: 15px; z-index: 998; background-color: #64748b; color: white; opacity: 0.45; border-radius: 30px; padding: 8px 12px; font-size: 11px; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.3); transition: opacity 0.2s; width: auto; margin-bottom: 0; }
+        .pwd-floating-btn:hover { opacity: 0.9; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; justify-content: center; align-items: center; padding: 10px; box-sizing: border-box; }
+        .modal-content { background: var(--bg-card); padding: 20px; border-radius: 8px; width: 100%; max-width: 550px; border: 1px solid var(--border-color); box-sizing: border-box; max-height: 90vh; overflow-y: auto; }
+        @media (min-width: 768px) { .modal-content { padding: 25px; } }
+        
+        .dash-query-box { background: var(--card-dash); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 20px; }
+        @media (min-width: 768px) { .dash-query-box { padding: 18px; margin-bottom: 25px; } }
+        .query-result-box { margin-top: 15px; padding: 12px; background: var(--bg-card); border-radius: 6px; border-left: 4px solid #3498db; display: none; }
+
+        .btn-duplicar-item { width: 100%; text-align: left; padding: 10px; margin-bottom: 8px; background: var(--card-dash); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 12px; }
+        .btn-duplicar-item:hover { background: #3498db; color: white; }
+
+        @media print {
+            body { background: white !important; color: black !important; margin: 0; }
+            .theme-toggle-top, .header-controls, .btn, .dash-query-box, .logs-floating-btn, .lakehouse-floating-btn, .pwd-floating-btn, #screen-login, #screen-secretaria-unidades, #screen-form, #screen-alterar-senha, #screen-pendente { display: none !important; }
+            .container { box-shadow: none !important; border: none !important; padding: 0 !important; background: transparent !important; }
+            table { width: 100% !important; border: 1px solid #000 !important; font-size: 8pt !important; min-width: auto !important; }
+            th, td { border: 1px solid #333 !important; color: black !important; background: transparent !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="global-loading" class="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Carregando...</div>
+</div>
+
+<div class="theme-toggle-top">
+    <button class="btn btn-purple btn-sm" id="btn-fixed-dash" style="display:none;" onclick="alternarVisaoDashboardFixo()">📊 Dashboard</button>
+    <button class="btn btn-warning btn-sm" id="btn-theme-toggle" onclick="toggleTheme()">☀️ Claro</button>
+</div>
+
+<button id="btn-flutuante-logs" class="btn btn-secondary logs-floating-btn" onclick="abrirModalLogs()">📋 Histórico</button>
+<button id="btn-flutuante-lakehouse" class="btn btn-purple lakehouse-floating-btn" style="display:none;" onclick="abrirModalLakehouse()">🧠 Lakehouse</button>
+<button id="btn-flutuante-pwd" class="btn pwd-floating-btn" style="display:none;" onclick="iniciarTrocaSenha('home-flutuante')">🔑 Alterar Senha</button>
+
+<div id="modal-duplicar-linha" class="modal">
+    <div class="modal-content" style="max-width: 480px;">
+        <h3 style="margin-top: 0; text-align: center;">➕ Duplicar Linha Existente</h3>
+        <p style="font-size: 12px; color: var(--text-sub); text-align: center;">Selecione qual linha/serviço deseja duplicar nesta unidade:</p>
+        <div id="lista-linhas-para-duplicar" style="max-height: 300px; overflow-y: auto; margin: 15px 0;"></div>
+        <div style="display: flex; justify-content: flex-end;">
+            <button class="btn btn-secondary" onclick="fecharModalDuplicarLinha()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-gerenciar-senhas" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-top: 0; text-align: center;">🔑 Visualizar e Resetar Senhas</h3>
+        <p style="font-size: 11px; color: var(--text-sub); text-align: center;">Painel Exclusivo de Administração SES</p>
+        <div id="lista-senhas-usuarios" style="max-height: 250px; overflow-y: auto; margin: 15px 0;"></div>
+        <div style="display: flex; justify-content: flex-end;">
+            <button class="btn btn-secondary" onclick="fecharModalGerenciarSenhas()">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-lakehouse" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+            <h3 style="margin: 0; font-size: 14px;">🧠 Lakehouse - Consultas Inteligentes</h3>
+            <button class="btn btn-secondary btn-sm" onclick="fecharModalLakehouse()">✕</button>
+        </div>
+        <p style="font-size: 11px; color: var(--text-sub);">Selecione uma pergunta estratégica para cruzar dados da rede:</p>
+        <div class="form-group">
+            <select id="lakehouse-select-pergunta" onchange="executarConsultaLakehouse(this.value)">
+                <option value="">-- Selecione uma Pergunta Estratégica --</option>
+                <option value="total_geral_apresentado">Qual o valor total apresentado em todos os hospitais?</option>
+                <option value="total_geral_pago">Quanto já foi pago somando todas as unidades?</option>
+                <option value="processos_atestados_rede">Quantos processos no total da rede possuem Atesto Fiscal SIM?</option>
+                <option value="hospital_maior_volume">Qual hospital possui o maior volume financeiro de processos?</option>
+                <option value="pendencias_geral_sei">Quantos processos em toda a rede estão sem número de SEI?</option>
+                <option value="maior_valor_glosado">Qual hospital teve o maior valor glosado na rede?</option>
+                <option value="processos_com_ob">Quantos processos já possuem Ordem Bancária (OB) emitida?</option>
+                <option value="saldo_total_pendente">Qual o montante total de saldo financeiro a ser pago na rede?</option>
+                <option value="media_dias_tramitacao">Qual a média geral de dias desde o envio até a emissão da OB?</option>
+                <option value="processos_aguardando_sefaz">Quantos processos na rede estão aguardando liberação na SEFAZ?</option>
+            </select>
+        </div>
+        <div id="lakehouse-resultado-box" class="query-result-box" style="display: block; margin-top: 15px;">
+            <h4 style="margin: 0 0 5px 0; font-size: 13px; color: var(--text-title);">Resultado do Cruzamento:</h4>
+            <p id="lakehouse-resultado-texto" style="margin: 0; font-size: 13px; font-weight: bold; color: #2ecc71;">Selecione uma pergunta acima para iniciar a análise.</p>
+        </div>
+        <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
+            <button class="btn btn-secondary" onclick="fecharModalLakehouse()">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-atesto-auth" class="modal">
+    <div class="modal-content" style="max-width: 380px;">
+        <h3 style="margin-top: 0; text-align: center;">Assinatura do Atesto Fiscal</h3>
+        <p style="font-size: 11px; color: var(--text-sub); text-align: center;">Selecione o assinante e informe a senha para confirmar.</p>
+        <div class="form-group">
+            <label>Assinante:</label>
+            <select id="atesto-usuario">
+              <option value="Saulo Bruno Lopes de Oliveira">Saulo Bruno Lopes de Oliveira</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Senha do Atesto Fiscal:</label>
+            <input type="password" id="atesto-senha" placeholder="Digite a senha" onkeydown="if(event.key === 'Enter') confirmarAssinaturaAtesto();">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px;">
+            <button class="btn btn-secondary" onclick="fecharModalAtestoAuth(false)">Cancelar</button>
+            <button class="btn btn-success" onclick="confirmarAssinaturaAtesto()">Assinar & Atestar</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-download-sei-auth" class="modal">
+    <div class="modal-content" style="max-width: 380px;">
+        <h3 style="margin-top: 0; text-align: center;">Baixar PDF do SEI</h3>
+        <p style="font-size: 11px; color: var(--text-sub); text-align: center;">Informe a senha de Atesto Fiscal.</p>
+        <div class="form-group">
+            <label>Senha:</label>
+            <input type="password" id="sei-download-senha" placeholder="Digite sua senha" onkeydown="if(event.key === 'Enter') confirmarDownloadPdfSEI();">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px;">
+            <button class="btn btn-secondary" onclick="fecharModalDownloadSEI()">Cancelar</button>
+            <button class="btn btn-primary" onclick="confirmarDownloadPdfSEI()">Confirmar & Baixar</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-escolha-tipo-senha" class="modal">
+    <div class="modal-content" style="max-width: 380px; text-align: center;">
+        <h3 style="margin-top: 0;">Alterar Senha</h3>
+        <p style="font-size: 12px; color: var(--text-sub);">Qual senha você deseja alterar?</p>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+            <button class="btn btn-primary" onclick="selecionarTipoSenha('login')">🔑 Senha de Login</button>
+            <button class="btn btn-purple" onclick="selecionarTipoSenha('atesto')">✍️ Senha do Atesto Fiscal</button>
+            <button class="btn btn-secondary" onclick="fecharModalEscolhaSenha()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-logs" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+            <h3 style="margin: 0; font-size: 14px;">📜 Histórico de Alterações</h3>
+            <button class="btn btn-secondary btn-sm" onclick="fecharModalLogs()">✕</button>
+        </div>
+        
+        <div id="logs-container-list" style="max-height: 280px; overflow-y: auto; background: var(--bg-main); padding: 10px; border-radius: 6px; font-size: 11px;">
+            <p style="color: var(--text-sub); text-align: center;">Carregando histórico...</p>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; flex-wrap: wrap; gap: 8px;">
+            <div>
+                <button id="btn-mostrar-mais-logs" class="btn btn-primary btn-sm" onclick="expandirLogsPaginados()">+ Mostrar mais</button>
+                <button id="btn-limpar-historico-master" class="btn btn-danger btn-sm" style="display:none;" onclick="solicitarLimpezaHistorico()">Limpar</button>
+            </div>
+            <div id="pagination-controls" style="display: none; align-items: center; gap: 6px;">
+                <button class="btn btn-secondary btn-sm" onclick="mudarPaginaLogs(-1)">◀</button>
+                <span id="page-indicator" style="font-size: 11px; font-weight: bold; color: var(--text-title);">1/1</span>
+                <button class="btn btn-secondary btn-sm" onclick="mudarPaginaLogs(1)">▶</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div id="screen-login" class="screen active">
+        <div class="login-box">
+            <h2 style="text-align: center; margin-bottom: 5px;">Acesso ao Sistema</h2>
+            <div class="logo-container">
+                <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' width='100%25'><rect width='120' height='120' rx='15' fill='%232c3e50'/><path d='M25 50 h20 l5 -20 l5 40 l5 -25 l5 5 h30' fill='none' stroke='%233498db' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/><text x='60' y='88' font-family='Arial, sans-serif' font-weight='900' font-size='20' fill='%23ffffff' text-anchor='middle' letter-spacing='3'>SIMPA</text><text x='60' y='104' font-family='Arial, sans-serif' font-weight='bold' font-size='7' fill='%233498db' text-anchor='middle' letter-spacing='0.5'>MONITORAMENTO</text></svg>" class="logo-img" alt="Logo SIMPA">
+            </div>
+
+            <div class="form-group">
+                <label>Usuário:</label>
+                <select id="login-user">
+                    <option value="secretaria de saúde">SECRETARIA DE SAÚDE</option>
+                    <option value="coopanest">COOPANEST</option>
+                    <option value="visão executiva">VISÃO EXECUTIVA</option>
+                    <option value="auditoria">AUDITORIA</option>
+                    <option value="hosp. agamenom magalhães">HOSPITAL AGAMENOM MAGALHÃES</option>
+                    <option value="hosp. barão de lucena">HOSPITAL BARÃO DE LUCENA</option>
+                    <option value="hosp. da restauração">HOSPITAL DA RESTAURAÇÃO</option>
+                    <option value="hosp. getulio vargas">HOSPITAL GETULIO VARGAS</option>
+                    <option value="hosp. otavio de freitas">HOSPITAL OTAVIO DE FREITAS</option>
+                    <option value="hosp. regional do agreste">HOSPITAL REGIONAL DO AGRESTE</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Senha:</label>
+                <input type="password" id="login-pass" placeholder="Digite sua senha" onkeydown="if(event.key === 'Enter') verifyLogin();">
+            </div>
+            <button class="btn btn-success" style="width: 100%; margin-top: 10px;" onclick="verifyLogin()">Entrar</button>
+        </div>
+    </div>
+
+    <div id="screen-pendente" class="screen">
+        <div class="secretaria-box" style="text-align: center;">
+            <h2 id="nome-hospital-pendente">Acesso Integrado</h2>
+            <p style="color: var(--text-sub);">O painel de monitoramento desta unidade está ativo.</p>
+            <button class="btn btn-secondary" onclick="voltarParaMenuOuLogin()">Voltar ao Menu</button>
+        </div>
+    </div>
+    
+    <div id="screen-secretaria-unidades" class="screen">
+        <div class="secretaria-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 11px; color: var(--text-sub);" id="label-painel-usuario">PAINEL SES</span>
+                <button class="btn btn-warning btn-sm" id="btn-secret-reset-pwd" style="display: none;" onclick="abrirModalGerenciarSenhas()">🔑 Resetar Senhas</button>
+            </div>
+
+            <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' width='100%25'><rect width='120' height='120' rx='15' fill='%232c3e50'/><path d='M25 50 h20 l5 -20 l5 40 l5 -25 l5 5 h30' fill='none' stroke='%233498db' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/><text x='60' y='88' font-family='Arial, sans-serif' font-weight='900' font-size='20' fill='%23ffffff' text-anchor='middle' letter-spacing='3'>SIMPA</text><text x='60' y='104' font-family='Arial, sans-serif' font-weight='bold' font-size='7' fill='%233498db' text-anchor='middle' letter-spacing='0.5'>MONITORAMENTO</text></svg>" class="logo-img-small" alt="Logo SIMPA">
+            
+            <h2 style="text-align: center;" id="titulo-painel-unidades">Painel Administrativo</h2>
+            <p style="color: var(--text-sub); text-align: center; margin-bottom: 20px; font-size: 12px;">Selecione a unidade hospitalar para gerenciar ou visualizar.</p>
+            
+            <button class="btn btn-primary" style="width: 100%; font-size: 14px; padding: 10px;" onclick="toggleUnidadesMenu()">Unidades Hospitalares</button>
+            
+            <div id="unidades-dropdown" class="unidades-container">
+                <button class="btn-unidade" onclick="selecionarUnidadeSecretaria('hosp. agamenom magalhães', 'Hospital Agamenon Magalhães')">1. HOSPITAL AGAMENOM MAGALHÃES</button>
+                <button class="btn-unidade" onclick="selecionarUnidadeSecretaria('hosp. barão de lucena', 'Hospital Barão de Lucena')">2. HOSPITAL BARÃO DE LUCENA</button>
+                <button class="btn-unidade" onclick="selecionarUnidadeSecretaria('hosp. da restauração', 'Hospital da Restauração')">3. HOSPITAL DA RESTAURAÇÃO</button>
+                <button class="btn-unidade" onclick="selecionarUnidadeSecretaria('hosp. getulio vargas', 'Hospital Getúlio Vargas')">4. HOSPITAL GETULIO VARGAS</button>
+                <button class="btn-unidade" onclick="selecionarUnidadeSecretaria('hosp. otavio de freitas', 'Hospital Otávio de Freitas')">5. HOSPITAL OTAVIO DE FREITAS</button>
+                <button class="btn-unidade" onclick="selecionarUnidadeSecretaria('hosp. regional do agreste', 'Hospital Regional do Agreste')">6. HOSPITAL REGIONAL DO AGRESTE</button>
+            </div>
+
+            <button class="btn btn-danger" style="width: 100%; margin-top: 15px;" onclick="logout()">Sair do Sistema</button>
+        </div>
+    </div>
+
+    <div id="screen-alterar-senha" class="screen">
+        <div class="secretaria-box" style="max-width: 380px;">
+            <h2 style="text-align: center;" id="pwd-title-head">Alterar Senha</h2>
+            <p style="color: var(--text-sub); text-align: center; font-size: 11px; margin-bottom: 15px;" id="pwd-user-label"></p>
+            
+            <div class="form-group">
+                <label>Senha Atual:</label>
+                <input type="password" id="pwd-current">
+            </div>
+            <div class="form-group">
+                <label>Nova Senha:</label>
+                <input type="password" id="pwd-new">
+            </div>
+            <div class="form-group">
+                <label>Confirmar Nova Senha:</label>
+                <input type="password" id="pwd-confirm">
+            </div>
+            
+            <button class="btn btn-success" style="width: 100%; margin-top: 10px;" onclick="executarAlteracaoSenha()">Salvar Nova Senha</button>
+            <button class="btn btn-secondary" style="width: 100%; margin-top: 8px;" onclick="cancelarAlteracaoSenha()">Voltar</button>
+        </div>
+    </div>
+
+    <div id="screen-home" class="screen">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 10px; gap: 8px;">
+            <h2 id="home-title" style="margin: 0; font-size: 1.1rem;">Painel de Monitoramento</h2>
+        </div>
+        
+        <div class="header-controls">
+            <div class="selector-group" style="display: flex; gap: 15px; align-items: flex-start;">
+                <div style="display: flex; flex-direction: column;">
+                    <label for="select-exercicio" style="margin-bottom: 4px;">Exercício</label>
+                    <select id="select-exercicio" onchange="alterarExercicio(this.value)" style="padding: 6px; font-size: 12px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
+                        <option value="2025">2025</option>
+                        <option value="2026" selected>2026</option>
+                        <option value="TOTAL">TOTAL</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; flex-direction: column;">
+                    <label for="select-competencia" style="margin-bottom: 4px;">Competência</label>
+                    <select id="select-competencia" onchange="alterarCompetencia(this.value)" style="padding: 6px; font-size: 12px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
+                        <option value="">Carregando...</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; width: auto; margin-left: 0;">
+                <button class="btn btn-success btn-sm" id="btn-adicionar-linha-main" onclick="abrirModalDuplicarLinha()">➕ Adicionar Linha</button>
+                <button class="btn btn-purple btn-sm" onclick="exportarTabelaExcelXLSX()">📊 Excel</button>
+                <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨️ PDF</button>
+                <button class="btn btn-primary btn-sm" id="btn-gerenciar-dados" onclick="goToForm()">Gerenciar</button>
+                <button class="btn btn-danger btn-sm" onclick="voltarParaMenuOuLogin()">Sair</button>
+            </div>
+        </div>
+
+        <div id="normal-table-container" class="table-responsive">
+            <table id="main-data-table">
+                <thead>
+                    <tr>
+                        <th>Serviço</th>
+                        <th>Unidade</th>
+                        <th>Competência</th>
+                        <th>Tipo de Processo</th>
+                        <th>Forma de Pagamento</th>
+                        <th>Monitoramento</th>
+                        <th>Processo SEI N.: Auditoria</th>
+                        <th>SEI - Status (Robô) Último do Fluxo</th>
+                        <th>Valor Apresentado</th>
+                        <th>Valor Glosado</th>
+                        <th>Valor Aprovado</th>
+                        <th>Data Publicação</th>
+                        <th>Data Envio p/ Coopanest-PE</th>
+                        <th>Data de Retorno</th>
+                        <th>Recibo N°</th>
+                        <th>Atesto Fiscal</th>
+                        <th>Orçamento - PF</th>
+                        <th>Número PD - Gerada</th>
+                        <th>Ordem Bancária (OB)</th>
+                        <th>Status da PD - Banco</th>
+                        <th>Valor do Contrato</th>
+                        <th>Saldo do Contrato</th>
+                        <th>Ações / SEI</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+
+        <div id="dashboard-container" style="display: none;">
+            <div class="dashboard-title" id="dashboard-main-title">DASHBOARD DE MONITORAMENTO</div>
+            
+            <div style="background: var(--card-dash); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                <strong style="font-size: 11px; color: var(--text-sub); width: 100%;">FILTROS DO DASHBOARD:</strong>
+                
+                <div style="display: flex; flex-direction: column;">
+                    <label style="font-size: 10px; font-weight: bold; color: var(--text-sub);">Ano do Exercício:</label>
+                    <select id="dash-filter-ano" onchange="aoMudarAnoDashboard(this.value)" style="padding: 5px; font-size: 11px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
+                        <option value="TODOS">TODOS OS ANOS</option>
+                        <option value="2025">2025</option>
+                        <option value="2026">2026</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; flex-direction: column;">
+                    <label style="font-size: 10px; font-weight: bold; color: var(--text-sub);">Competência:</label>
+                    <select id="dash-filter-competencia" onchange="renderDashboardUnidade()" style="padding: 5px; font-size: 11px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
+                        <option value="">TODAS AS COMPETÊNCIAS</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; flex-direction: column;">
+                    <label style="font-size: 10px; font-weight: bold; color: var(--text-sub);">Serviço:</label>
+                    <select id="dash-filter-servico" onchange="renderDashboardUnidade()" style="padding: 5px; font-size: 11px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
+                        <option value="">TODOS OS SERVIÇOS</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; flex-direction: column;">
+                    <label style="font-size: 10px; font-weight: bold; color: var(--text-sub);">Status:</label>
+                    <select id="dash-filter-status" onchange="renderDashboardUnidade()" style="padding: 5px; font-size: 11px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
+                        <option value="">TODOS OS STATUS</option>
+                        <option value="EM ANDAMENTO">EM ANDAMENTO</option>
+                        <option value="PAGO">PAGO</option>
+                        <option value="AGUARDANDO SEFAZ">AGUARDANDO SEFAZ</option>
+                        <option value="AGUARDANDO Nº DO SEI">AGUARDANDO Nº DO SEI</option>
+                        <option value="AGUARDANDO ASSINATURA DO ATESTO">AGUARDANDO ASSINATURA DO ATESTO</option>
+                        <option value="EM PROCESSO DE AUDITORIA">EM PROCESSO DE AUDITORIA</option>
+                        <option value="AGUARDANDO ENVIO DO RECIBO (COOPANEST)">AGUARDANDO ENVIO DO RECIBO (COOPANEST)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="dash-cards-grid">
+                <div class="dash-card"><div class="label">Ano Exercício</div><div class="number" id="dash-card-ano" style="color:#f1c40f;">2026</div></div>
+                <div class="dash-card"><div class="label">Competência</div><div class="number" id="dash-card-comp" style="color:#3498db;">TODAS</div></div>
+                <div class="dash-card"><div class="label">Serviço</div><div class="number" id="dash-card-servico" style="color:#9b59b6;">TODOS</div></div>
+                <div class="dash-card"><div class="label">Status</div><div class="number" id="dash-card-status" style="color:#1abc9c;">GERAL</div></div>
+                <div class="dash-card"><div class="label">Nº Total Processos</div><div class="number" id="dash-total-proc">0</div></div>
+                <div class="dash-card"><div class="label">Valores Apresentados</div><div class="number" id="dash-total-val" style="color: #2ecc71;">R$ 0,00</div></div>
+                <div class="dash-card"><div class="label">Valores Glosados</div><div class="number" id="dash-total-glo" style="color: #e74c3c;">R$ 0,00</div></div>
+                <div class="dash-card"><div class="label">Valores Aprovados</div><div class="number" id="dash-valor-aprovado" style="color: #3498db;">R$ 0,00</div></div>
+                <div class="dash-card"><div class="label">Valores Pagos</div><div class="number" id="dash-valor-pago" style="color: #27ae60;">R$ 0,00</div></div>
+                <div class="dash-card"><div class="label">Valores a Pagar</div><div class="number" id="dash-valor-a-pagar" style="color: #e67e22;">R$ 0,00</div></div>
+                <div class="dash-card"><div class="label">Processos Atestados</div><div class="number" id="dash-atestados" style="color: #9b59b6;">0</div></div>
+                <div class="dash-card"><div class="label">Média Envio ➔ OB</div><div class="number" id="dash-tempo-medio" style="color: #3498db;">0 dias</div></div>
+            </div>
+
+            <div class="dash-query-box">
+                <h3 style="margin-top: 0; font-size: 13px; color: var(--text-title);">🔍 Consulta Rápida de Indicadores</h3>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <select id="dash-query-select" onchange="executarConsultaDashboard(this.value)">
+                        <option value="">-- Selecione uma Pergunta Rápida --</option>
+                        <option value="total_valor_apresentado">Qual é o valor total apresentado acumulado?</option>
+                        <option value="total_valor_glosado">Qual é o valor total glosado acumulado?</option>
+                        <option value="total_valor_aprovado">Qual é o valor total aprovado (líquido) para o hospital?</option>
+                        <option value="status_atesto_fiscal">Quantos processos já foram efetivamente ATESTADOS?</option>
+                        <option value="processos_pagos">Quantos processos e qual valor total já foram efetivamente PAGOS?</option>
+                        <option value="atestados_a_pagar">Processos atestados aguardando pagamento (Em Andamento)</option>
+                    </select>
+                </div>
+                <div id="query-result" class="query-result-box">
+                    <h4 id="query-result-title" style="margin: 0 0 5px 0; font-size: 12px; color: var(--text-title);"></h4>
+                    <p id="query-result-desc" style="margin: 0; font-size: 15px; font-weight: bold; color: #2ecc71;"></p>
+                </div>
+            </div>
+
+            <div style="background: var(--card-dash); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <h3 style="margin-top: 0; font-size: 13px;">Visão Geral dos Registros</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Serviço</th>
+                                <th>Competência</th>
+                                <th>Ano</th>
+                                <th>Nº SEI</th>
+                                <th>Valor Apresentado</th>
+                                <th>Valor Glosado</th>
+                                <th>Valor Aprovado</th>
+                                <th>Atesto Fiscal</th>
+                                <th>PD Gerada</th>
+                                <th>Ordem Pagto (OB)</th>
+                                <th>Status Pagamento</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash-summary-table"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-form" class="screen">
+        <h2>Gerenciar Informações (<span id="competencia-atual-titulo"></span>)</h2>
+        <p style="color: var(--text-sub); font-size: 12px;">Selecione a linha para atualizar as informações.</p>
+        
+        <div class="form-group">
+            <label>Selecione a Linha (Serviço):</label>
+            <select id="select-row" onchange="carregarDadosLinhaFormulario()"></select>
+        </div>
+
+        <div class="form-group"><label>Serviço:</label><input type="text" id="field-servico" readonly></div>
+        <div class="form-group"><label>Unidade:</label><input type="text" id="field-unidade" readonly></div>
+        <div class="form-group"><label>Tipo de Processo:</label><input type="text" id="field-tipo"></div>
+        <div class="form-group">
+            <label>Forma de Pagamento:</label>
+            <select id="field-forma-pagamento">
+                <option value="">-- Selecione --</option>
+                <option value="TAC">TAC</option>
+                <option value="ORDINÁRIO">ORDINÁRIO</option>
+            </select>
+        </div>
+        <div class="form-group"><label>Monitoramento:</label><input type="text" id="field-monitoramento" readonly></div>
+        <div class="form-group"><label>Processo SEI N.º:</label><input type="text" id="field-sei" oninput="avaliarStatusDGFAutomatico()"></div>
+        <div class="form-group"><label>SEI - Status (Robô):</label><input type="text" id="field-sei-status" readonly></div>
+        <div class="form-group"><label>Valor Apresentado:</label><input type="text" id="field-valor-ap" value="R$ 0,00" oninput="aplicarMascaraMoeda(this); calcularValorAprovado(); avaliarStatusDGFAutomatico();"></div>
+        <div class="form-group"><label>Valor Glosado:</label><input type="text" id="field-valor-gl" value="R$ 0,00" oninput="aplicarMascaraMoeda(this); calcularValorAprovado(); avaliarStatusDGFAutomatico();"></div>
+        <div class="form-group"><label>Valor Aprovado:</label><input type="text" id="field-valor-aprov" value="R$ 0,00" readonly></div>
+        <div class="form-group"><label>Data Publicação:</label><input type="date" id="field-data-publicacao" onchange="avaliarStatusDGFAutomatico()"></div>
+        <div class="form-group"><label>Data Envio p/ Coopanest-PE:</label><input type="date" id="field-data-envio" onchange="avaliarStatusDGFAutomatico()"></div>
+        <div class="form-group"><label>Data de Retorno:</label><input type="date" id="field-data-retorno" onchange="avaliarStatusDGFAutomatico()"></div>
+        <div class="form-group"><label>Recibo N.º:</label><input type="text" id="field-recibo"></div>
+        <div class="form-group">
+            <label>Atesto Fiscal:</label>
+            <select id="field-atesto-fiscal" onchange="tratarMudancaAtesto(this.value)">
+                <option value="NÃO">NÃO</option>
+                <option value="SIM">SIM</option>
+            </select>
+        </div>
+        <div class="form-group"><label>ORÇAMENTO - PF:</label><input type="text" id="field-orcamento-uge"></div>
+        <div class="form-group"><label>NÚMERO PD - GERADA:</label><input type="text" id="field-pd-uge" oninput="avaliarStatusDGFAutomatico()"></div>
+        <div class="form-group"><label>ORDEM BANCÁRIA (OB):</label><input type="text" id="field-ob-uge" oninput="avaliarStatusDGFAutomatico()"></div>
+        <div class="form-group">
+            <label>STATUS DA PD - BANCO (DGF):</label>
+            <input type="text" id="field-status-dgf" readonly style="font-weight: bold; color: #3498db;">
+        </div>
+        <div class="form-group"><label>Valor do Contrato:</label><input type="text" id="field-valor-contrato" value="R$ 0,00" oninput="aplicarMascaraMoeda(this);"></div>
+        <div class="form-group"><label>Saldo do Contrato:</label><input type="text" id="field-saldo-contrato" value="R$ 0,00" oninput="aplicarMascaraMoeda(this);"></div>
+
+        <div style="display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;">
+            <button class="btn btn-success" onclick="abrirModalDuplicarLinha()">➕ Adicionar Linha</button>
+            <button class="btn btn-success" onclick="saveData()">Salvar</button>
+            <button class="btn btn-warning" onclick="editData()">Editar</button>
+            <button class="btn btn-danger" onclick="deleteData()">Excluir</button>
+            <button class="btn btn-purple" id="btn-form-download-sei" style="display: none;" onclick="solicitarDownloadPdfSEIForm()">📄 PDF SEI</button>
+            <button class="btn btn-secondary" onclick="goToHome()">Voltar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let usuarioLogado = "";
+    let exercicioSelecionado = "2026";
+    let competenciaSelecionada = "";
+    let planilhaDados = [];
+    let dadosFiltradosDashboard = [];
+    let visualizandoUnidadeSecretaria = "";
+    let estadoAnteriorAtesto = "NÃO";
+    let assinanteAtual = "";
+    let historicoLogsLocal = [];
+    let modoPaginadoLogs = false;
+    let paginaAtualLogs = 1;
+    const LOGS_POR_PAGINA = 10;
+    let tipoSenhaEmAlteracao = "login";
+    let linhaSelecionadaParaPdfSEI = null;
+    let seqSecreta = "";
+
+    const exerciciosECompetencias = {
+        "2025": ["NOVEMBRO.2025", "DEZEMBRO.2025"],
+        "2026": ["JANEIRO.2026", "FEVEREIRO.2026", "MARÇO.2026", "ABRIL.2026", "MAIO.2026", "JUNHO.2026", "JULHO.2026", "AGOSTO.2026", "SETEMBRO.2026", "OUTUBRO.2026", "NOVEMBRO.2026", "DEZEMBRO.2026"],
+        "TOTAL": ["TOTAL", "NOVEMBRO.2025", "DEZEMBRO.2025", "JANEIRO.2026", "FEVEREIRO.2026", "MARÇO.2026", "ABRIL.2026", "MAIO.2026", "JUNHO.2026", "JULHO.2026", "AGOSTO.2026", "SETEMBRO.2026", "OUTUBRO.2026", "NOVEMBRO.2026", "DEZEMBRO.2026"]
+    };
+
+    let credentials = {
+        "secretaria de saúde": { pass: "", atestoPass: "", screen: "secretaria", label: "SECRETARIA DE SAÚDE" },
+        "coopanest": { pass: "", atestoPass: "", screen: "secretaria", label: "COOPANEST" },
+        "visão executiva": { pass: "", atestoPass: "", screen: "secretaria", label: "VISÃO EXECUTIVA" },
+        "auditoria": { pass: "", atestoPass: "", screen: "secretaria", label: "AUDITORIA" },
+        "hosp. agamenom magalhães": { pass: "", atestoPass: "", screen: "home", label: "Hospital Agamenon Magalhães" },
+        "hosp. barão de lucena": { pass: "", atestoPass: "", screen: "home", label: "Hospital Barão de Lucena" },
+        "hosp. da restauração": { pass: "", atestoPass: "", screen: "home", label: "Hospital da Restauração" },
+        "hosp. getulio vargas": { pass: "", atestoPass: "", screen: "home", label: "Hospital Getúlio Vargas" },
+        "hosp. otavio de freitas": { pass: "", atestoPass: "", screen: "home", label: "Hospital Otávio de Freitas" },
+        "hosp. regional do agreste": { pass: "", atestoPass: "", screen: "home", label: "Hospital Regional do Agreste" }
+    };
+
+    function padronizarNomeCompetencia(str) {
+        if (!str) return "";
+        return str.toString()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toUpperCase()
+            .trim();
+    }
+
+    function showSpinner() { document.getElementById('global-loading').style.display = 'flex'; }
+    function hideSpinner() { document.getElementById('global-loading').style.display = 'none'; }
+    
+    function toggleTheme() {
+        document.body.classList.toggle('light-mode');
+        const isLight = document.body.classList.contains('light-mode');
+        document.getElementById('btn-theme-toggle').innerText = isLight ? "🌙 Escuro" : "☀️ Claro";
+    }
+
+    function switchScreen(screenId, isNavegacaoManual = true) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        const targetScreen = document.getElementById(screenId);
+        if (targetScreen) targetScreen.classList.add('active');
+        
+        const btnLogs = document.getElementById('btn-flutuante-logs');
+        const btnLake = document.getElementById('btn-flutuante-lakehouse');
+        const btnFixedDash = document.getElementById('btn-fixed-dash');
+        const btnPwd = document.getElementById('btn-flutuante-pwd');
+
+        if (screenId !== 'screen-login') {
+            btnLogs.style.display = 'block';
+        } else {
+            btnLogs.style.display = 'none';
+        }
+
+        if (screenId === 'screen-home') {
+            btnFixedDash.style.display = 'inline-block';
+            btnPwd.style.display = 'block';
+        } else {
+            btnFixedDash.style.display = 'none';
+            btnPwd.style.display = 'none';
+        }
+
+        if (screenId === 'screen-secretaria-unidades' && (usuarioLogado === "secretaria de saúde" || usuarioLogado === "visão executiva")) {
+            btnLake.style.display = 'block';
+        } else {
+            btnLake.style.display = 'none';
+        }
+
+        if (isNavegacaoManual) {
+            history.pushState({ screenId: screenId }, '', '#' + screenId);
+            localStorage.setItem('simpa_active_screen', screenId);
+            if (usuarioLogado) localStorage.setItem('simpa_logged_user', usuarioLogado);
+            if (competenciaSelecionada) localStorage.setItem('simpa_competencia', competenciaSelecionada);
+            if (exercicioSelecionado) localStorage.setItem('simpa_exercicio', exercicioSelecionado);
+        }
+    }
+
+    window.onpopstate = function(event) {
+        if (event.state && event.state.screenId) {
+            switchScreen(event.state.screenId, false);
+        }
+    };
+
+    function carregarCredenciaisDaPlanilha() {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run.withSuccessHandler(function(credMap) {
+                if (credMap && typeof credMap === 'object') {
+                    Object.keys(credMap).forEach(u => {
+                        let key = u.toLowerCase().trim();
+                        if (credentials[key]) {
+                            credentials[key].pass = credMap[u].pass || credentials[key].pass;
+                            credentials[key].atestoPass = credMap[u].atestoPass || credMap[u].pass || credentials[key].atestoPass;
+                        } else {
+                            credentials[key] = {
+                                pass: credMap[u].pass || "",
+                                atestoPass: credMap[u].atestoPass || credMap[u].pass || "",
+                                screen: "home",
+                                label: u
+                            };
+                        }
+                    });
+                }
+            }).getCredenciaisPlanilha();
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        carregarCredenciaisDaPlanilha();
+        const savedUser = localStorage.getItem('simpa_logged_user');
+        const savedScreen = localStorage.getItem('simpa_active_screen');
+        const savedComp = localStorage.getItem('simpa_competencia');
+        const savedExer = localStorage.getItem('simpa_exercicio');
+
+        if (savedUser && credentials[savedUser]) {
+            usuarioLogado = savedUser;
+            if (savedExer) exercicioSelecionado = savedExer;
+            if (savedComp) competenciaSelecionada = savedComp;
+            if (savedScreen && savedScreen !== 'screen-login') {
+                if (credentials[usuarioLogado].screen === 'secretaria') {
+                    document.getElementById('label-painel-usuario').innerText = "PAINEL " + credentials[usuarioLogado].label.toUpperCase();
+                    document.getElementById('titulo-painel-unidades').innerText = "Painel Administrativo - " + credentials[usuarioLogado].label;
+                }
+                switchScreen(savedScreen, false);
+                carregarCompetencias();
+            } else {
+                verifyLoginAuto(savedUser);
+            }
+        }
+    });
+
+    window.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.shiftKey && (e.key === 'R' || e.key === 'r')) {
+            alternarVisibilidadeResetSenhas();
+        } else {
+            seqSecreta += e.key.toLowerCase();
+            if (seqSecreta.length > 10) seqSecreta = seqSecreta.slice(-10);
+            if (seqSecreta.includes("reset")) {
+                alternarVisibilidadeResetSenhas();
+                seqSecreta = "";
+            }
+        }
+    });
+
+    function alternarVisibilidadeResetSenhas() {
+        if (usuarioLogado === "secretaria de saúde") {
+            const btn = document.getElementById('btn-secret-reset-pwd');
+            if (btn) {
+                if (btn.style.display === 'inline-block') {
+                    btn.style.display = 'none';
+                    alert("Modo Administrador: Botão de reset ocultado!");
+                } else {
+                    btn.style.display = 'inline-block';
+                    alert("Modo Administrador: Botão de reset liberado!");
+                }
+            }
+        }
+    }
+
+    function abrirModalGerenciarSenhas() {
+        const div = document.getElementById('lista-senhas-usuarios');
+        div.innerHTML = "";
+        Object.keys(credentials).forEach(u => {
+            const item = document.createElement('div');
+            item.style.cssText = "background: var(--bg-main); padding: 8px; border-radius: 6px; margin-bottom: 6px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; font-size: 11px;";
+            item.innerHTML = `
+                <div>
+                    <strong>${credentials[u].label}</strong><br>
+                    <span style="font-size:10px; color:var(--text-sub);">Login: ${credentials[u].pass} | Atesto: ${credentials[u].atestoPass}</span>
+                </div>
+                <button class="btn btn-warning btn-sm" onclick="resetarSenhaUsuario('${u}')">Resetar</button>
+            `;
+            div.appendChild(item);
+        });
+        document.getElementById('modal-gerenciar-senhas').style.display = 'flex';
+    }
+
+    function fecharModalGerenciarSenhas() { document.getElementById('modal-gerenciar-senhas').style.display = 'none'; }
+
+    function resetarSenhaUsuario(userKey) {
+        if (credentials[userKey]) {
+            credentials[userKey].pass = "123456";
+            credentials[userKey].atestoPass = "123456";
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run.salvarSenhaPlanilha(userKey, "123456", "login");
+                google.script.run.salvarSenhaPlanilha(userKey, "123456", "atesto");
+            }
+
+            alert(`As senhas de ${credentials[userKey].label} foram resetadas para '123456'!`);
+            abrirModalGerenciarSenhas();
+        }
+    }
+
+    function alternarVisaoDashboardFixo() {
+        if (usuarioLogado === "") { alert("Efetue o login."); return; }
+        if (document.getElementById('screen-home').classList.contains('active')) {
+            const dashCont = document.getElementById('dashboard-container');
+            const normCont = document.getElementById('normal-table-container');
+            if (dashCont.style.display === 'none') {
+                dashCont.style.display = 'block';
+                normCont.style.display = 'none';
+                carregarDadosDaPlanilha('TOTAL');
+            } else {
+                dashCont.style.display = 'none';
+                normCont.style.display = 'block';
+            }
+        }
+    }
+
+    function ordenarCompetenciasCronologicamente(lista) {
+        const ordemMeses = {
+            "JAN": 1, "JANEIRO": 1,
+            "FEV": 2, "FEVEREIRO": 2,
+            "MAR": 3, "MARÇO": 3, "MARCO": 3,
+            "ABR": 4, "ABRIL": 4,
+            "MAI": 5, "MAIO": 5,
+            "JUN": 6, "JUNHO": 6,
+            "JUL": 7, "JULHO": 7,
+            "AGO": 8, "AGOSTO": 8,
+            "SET": 9, "SETEMBRO": 9,
+            "OUT": 10, "OUTUBRO": 10,
+            "NOV": 11, "NOVEMBRO": 11,
+            "DEZ": 12, "DEZEMBRO": 12
+        };
+
+        return lista.sort((a, b) => {
+            let strA = String(a).toUpperCase().trim();
+            let strB = String(b).toUpperCase().trim();
+
+            if (strA === "TOTAL") return -1;
+            if (strB === "TOTAL") return 1;
+
+            let anoA = extrairAnoString(strA) || 2026;
+            let anoB = extrairAnoString(strB) || 2026;
+
+            if (anoA !== anoB) return anoA - anoB;
+
+            let mesA = 0, mesB = 0;
+            Object.keys(ordemMeses).forEach(m => {
+                if (strA.includes(m)) mesA = ordemMeses[m];
+                if (strB.includes(m)) mesB = ordemMeses[m];
+            });
+
+            return mesA - mesB;
+        });
+    }
+
+    function extrairAnoString(str) {
+        if (str.includes("2025")) return 2025;
+        if (str.includes("2026")) return 2026;
+        if (str.includes("2027")) return 2027;
+        return null;
+    }
+
+    function carregarCompetencias() {
+        showSpinner();
+        const selectExercicio = document.getElementById('select-exercicio');
+        const selectComp = document.getElementById('select-competencia');
+
+        if (selectExercicio) selectExercicio.value = exercicioSelecionado;
+
+        const filtrarAbasPorExercicio = (abas) => {
+            if (!abas || abas.length === 0) return [];
+            if (exercicioSelecionado === "TOTAL") {
+                return abas;
+            }
+            return abas.filter(aba => {
+                let a = aba.toUpperCase().trim();
+                if (exercicioSelecionado === "2025") {
+                    return a.includes("2025") || a.includes("NOV.2025") || a.includes("DEZ.2025") || a.includes("NOVEMBRO.2025") || a.includes("DEZEMBRO.2025");
+                }
+                return a.includes(exercicioSelecionado) && !a.includes("2025");
+            });
+        };
+
+        const atualizarSelectCompetencia = (mesesDisponiveis) => {
+            selectComp.innerHTML = '';
+            
+            if (!mesesDisponiveis || mesesDisponiveis.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = "";
+                opt.textContent = "Nenhuma aba encontrada";
+                selectComp.appendChild(opt);
+                hideSpinner();
+                return;
+            }
+
+            let ordenados = ordenarCompetenciasCronologicamente(mesesDisponiveis);
+
+            ordenados.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = m;
+                selectComp.appendChild(opt);
+            });
+
+            if (!competenciaSelecionada || !ordenados.includes(competenciaSelecionada)) {
+                competenciaSelecionada = ordenados[0];
+            }
+            selectComp.value = competenciaSelecionada;
+            
+            const consultaPlanilha = (exercicioSelecionado === "2025" && document.getElementById('dashboard-container').style.display !== 'none') ? "TOTAL" : competenciaSelecionada;
+            carregarDadosDaPlanilha(consultaPlanilha);
+        };
+
+        if (typeof google === 'undefined' || !google.script || !google.script.run) {
+            setTimeout(() => {
+                hideSpinner();
+                let meses = exerciciosECompetencias[exercicioSelecionado] || [];
+                atualizarSelectCompetencia(meses);
+            }, 300);
+            return;
+        }
+
+        google.script.run.withSuccessHandler(function(abas) {
+            hideSpinner();
+            let abasExistentes = abas || [];
+            let abasFiltradas = filtrarAbasPorExercicio(abasExistentes);
+            
+            if (abasFiltradas.length === 0 && exerciciosECompetencias[exercicioSelecionado]) {
+                abasFiltradas = exerciciosECompetencias[exercicioSelecionado];
+            }
+            
+            atualizarSelectCompetencia(abasFiltradas);
+        }).withFailureHandler(function(err) {
+            hideSpinner();
+            let meses = exerciciosECompetencias[exercicioSelecionado] || [];
+            atualizarSelectCompetencia(meses);
+        }).getCompetencias();
+    }
+
+    function alterarExercicio(novoExercicio) {
+        exercicioSelecionado = novoExercicio;
+        localStorage.setItem('simpa_exercicio', exercicioSelecionado);
+        competenciaSelecionada = "";
+        
+        const selectAnoDash = document.getElementById('dash-filter-ano');
+        if(selectAnoDash) selectAnoDash.value = novoExercicio;
+        
+        carregarCompetencias();
+    }
+
+    function alterarCompetencia(novaComp) {
+        competenciaSelecionada = novaComp;
+        localStorage.setItem('simpa_competencia', competenciaSelecionada);
+        carregarDadosDaPlanilha(novaComp);
+    }
+
+    function iniciarTrocaSenha(origem) {
+        if (origem === 'hgv' || origem === 'home-flutuante') {
+            document.getElementById('modal-escolha-tipo-senha').style.display = 'flex';
+        } else {
+            tipoSenhaEmAlteracao = 'login';
+            abrirTelaAlterarSenha();
+        }
+    }
+
+    function fecharModalEscolhaSenha() { document.getElementById('modal-escolha-tipo-senha').style.display = 'none'; }
+    function selecionarTipoSenha(tipo) { fecharModalEscolhaSenha(); tipoSenhaEmAlteracao = tipo; abrirTelaAlterarSenha(); }
+
+    function abrirTelaAlterarSenha() {
+        const tipoNome = tipoSenhaEmAlteracao === 'login' ? "Senha de Login" : "Senha do Atesto Fiscal";
+        document.getElementById('pwd-title-head').innerText = `Alterar ${tipoNome}`;
+        document.getElementById('pwd-user-label').innerText = `Usuário: ${usuarioLogado.toUpperCase()}`;
+        document.getElementById('pwd-current').value = "";
+        document.getElementById('pwd-new').value = "";
+        document.getElementById('pwd-confirm').value = "";
+        switchScreen('screen-alterar-senha');
+    }
+
+    function cancelarAlteracaoSenha() {
+        if (credentials[usuarioLogado] && credentials[usuarioLogado].screen === "secretaria") {
+            switchScreen('screen-secretaria-unidades');
+        } else {
+            switchScreen('screen-home');
+        }
+    }
+
+    function executarAlteracaoSenha() {
+        const cur = document.getElementById('pwd-current').value;
+        const nw = document.getElementById('pwd-new').value;
+        const cf = document.getElementById('pwd-confirm').value;
+        if (!cur || !nw || !cf) { alert("Preencha todos os campos."); return; }
+        const senhaAtualCadastrada = (tipoSenhaEmAlteracao === 'login') ? credentials[usuarioLogado].pass : credentials[usuarioLogado].atestoPass;
+        
+        if (senhaAtualCadastrada !== "" && cur !== senhaAtualCadastrada) { 
+            alert("SENHA INVALIDA"); 
+            return; 
+        }
+        if (nw !== cf) { alert("A nova senha e a confirmação não conferem."); return; }
+
+        if (tipoSenhaEmAlteracao === 'login') credentials[usuarioLogado].pass = nw;
+        else credentials[usuarioLogado].atestoPass = nw;
+
+        showSpinner();
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run.withSuccessHandler(function() {
+                hideSpinner();
+                alert("Senha alterada e sincronizada para todos os dispositivos!");
+                registrarLog("-", `Alteração de ${tipoSenhaEmAlteracao === 'login' ? 'Senha de Login' : 'Senha de Atesto'}`);
+                cancelarAlteracaoSenha();
+            }).withFailureHandler(function(err) {
+                hideSpinner();
+                alert("Erro ao salvar senha no servidor: " + (err.message || err));
+            }).salvarSenhaPlanilha(usuarioLogado, nw, tipoSenhaEmAlteracao);
+        } else {
+            hideSpinner();
+            alert("Senha alterada localmente!");
+            registrarLog("-", `Alteração de ${tipoSenhaEmAlteracao === 'login' ? 'Senha de Login' : 'Senha de Atesto'}`);
+            cancelarAlteracaoSenha();
+        }
+    }
+
+    function carregarDadosDaPlanilha(comp) {
+        showSpinner();
+        if (typeof google === 'undefined' || !google.script || !google.script.run) {
+            setTimeout(() => {
+                hideSpinner();
+                planilhaDados = [
+                    { id: 1, servico: "PRODUÇÃO ELETIVA", unidade: "HGV", competencia: "NOV.2025", tipo: "ORDINÁRIO", formaPagamento: "", monitoramento: "", sei: "2300000269.000100/2025-19", seiStatus: "", valorAp: 321077.08, valorGl: 0, valorAprov: 321077.08, dataPublicacao: "", dataEnvio: "", dataRetorno: "", recibo: "", atestoFiscal: "NÃO", orcamentoUge: "", pdUge: "", obUge: "", statusDgf: "EM PROCESSO DE AUDITORIA", valorContrato: 0, saldoContrato: 0 },
+                    { id: 2, servico: "PRODUÇÃO ELETIVA", unidade: "HGV", competencia: "DEZ.2025", tipo: "RECURSO DE GLOSA", formaPagamento: "", monitoramento: "", sei: "2300000269.000319/2025-18", seiStatus: "", valorAp: 29998.54, valorGl: 0, valorAprov: 29998.54, dataPublicacao: "", dataEnvio: "", dataRetorno: "", recibo: "", atestoFiscal: "NÃO", orcamentoUge: "", pdUge: "", obUge: "", statusDgf: "EM PROCESSO DE AUDITORIA", valorContrato: 0, saldoContrato: 0 },
+                    { id: 3, servico: "PRODUÇÃO ELETIVA", unidade: "HGV", competencia: comp, tipo: "CONSENSO", formaPagamento: "", monitoramento: "", sei: "2300000269.000101/2026-55", seiStatus: "", valorAp: 3024.16, valorGl: 0, valorAprov: 3024.16, dataPublicacao: "", dataEnvio: "", dataRetorno: "", recibo: "", atestoFiscal: "NÃO", orcamentoUge: "", pdUge: "", obUge: "", statusDgf: "EM PROCESSO DE AUDITORIA", valorContrato: 0, saldoContrato: 0 },
+                    { id: 4, servico: "PISO E COMPLEMENTO", unidade: "HGV", competencia: comp, tipo: "ORDINÁRIO", formaPagamento: "", monitoramento: "", sei: "2300000269.000099/2026-14", seiStatus: "", valorAp: 449234.13, valorGl: 0, valorAprov: 449234.13, dataPublicacao: "", dataEnvio: "", dataRetorno: "", recibo: "", atestoFiscal: "NÃO", orcamentoUge: "", pdUge: "", obUge: "", statusDgf: "EM PROCESSO DE AUDITORIA", valorContrato: 0, saldoContrato: 0 },
+                    { id: 5, servico: "PISO E COMPLEMENTO", unidade: "HGV", competencia: comp, tipo: "RECURSO DE GLOSA", formaPagamento: "", monitoramento: "", sei: "2300000269000339/2026-81", seiStatus: "", valorAp: 10491.65, valorGl: 0, valorAprov: 10491.65, dataPublicacao: "", dataEnvio: "", dataRetorno: "", recibo: "", atestoFiscal: "NÃO", orcamentoUge: "", pdUge: "", obUge: "", statusDgf: "EM PROCESSO DE AUDITORIA", valorContrato: 0, saldoContrato: 0 },
+                    { id: 6, servico: "PISO E COMPLEMENTO", unidade: "HGV", competencia: comp, tipo: "CONSENSO", formaPagamento: "", monitoramento: "", sei: "2300000269.000579/2026-85", seiStatus: "", valorAp: 0, valorGl: 0, valorAprov: 0, dataPublicacao: "", dataEnvio: "", dataRetorno: "", recibo: "", atestoFiscal: "NÃO", orcamentoUge: "", pdUge: "", obUge: "", statusDgf: "EM PROCESSO DE AUDITORIA", valorContrato: 0, saldoContrato: 0 }
+                ];
+                renderizarTabela(planilhaDados);
+                povoarFiltrosDashboard();
+                renderDashboardUnidade();
+            }, 300);
+            return;
+        }
+        google.script.run.withSuccessHandler(function(dados) {
+            hideSpinner();
+            planilhaDados = dados || [];
+            renderizarTabela(planilhaDados);
+            povoarFiltrosDashboard();
+            renderDashboardUnidade();
+        }).withFailureHandler(function(err) { 
+            hideSpinner(); 
+            alert("Erro ao carregar dados: " + (err.message || err));
+        }).dadosDaCompetencia(comp);
+    }
+
+    function renderizarTabela(dados) {
+        const tbody = document.getElementById('table-body');
+        tbody.innerHTML = '';
+        let dadosFiltrados = dados;
+        let targetHospital = (usuarioLogado === "secretaria de saúde" || usuarioLogado === "coopanest" || usuarioLogado === "visão executiva" || usuarioLogado === "auditoria") ? visualizandoUnidadeSecretaria : usuarioLogado;
+        
+        if (targetHospital && targetHospital !== "") {
+            let nomeFiltroHospital = credentials[targetHospital] ? credentials[targetHospital].label.toUpperCase() : targetHospital.toUpperCase();
+            
+            dadosFiltrados = dadosFiltrados.filter(r => {
+                let u = (r.unidade || "").toUpperCase().trim();
+                if (targetHospital === "hosp. getulio vargas" || nomeFiltroHospital.includes("GETÚLIO") || nomeFiltroHospital.includes("GETULIO")) {
+                    return u === "HGV" || u.includes("GETÚLIO") || u.includes("GETULIO");
+                }
+                return u.includes(nomeFiltroHospital) || nomeFiltroHospital.includes(u);
+            });
+        }
+
+        if (competenciaSelecionada && competenciaSelecionada !== "TOTAL") {
+            let compSelUpper = padronizarNomeCompetencia(competenciaSelecionada);
+            dadosFiltrados = dadosFiltrados.filter(r => {
+                let c = padronizarNomeCompetencia(r.competencia);
+                if (!c) return false;
+                if ((compSelUpper.includes("DEZ") || compSelUpper.includes("DEZEMBRO")) && (c.includes("DEZ") || c.includes("DEZEMBRO"))) return true;
+                if ((compSelUpper.includes("NOV") || compSelUpper.includes("NOVEMBRO")) && (c.includes("NOV") || c.includes("NOVEMBRO"))) return true;
+                if ((compSelUpper.includes("JAN") || compSelUpper.includes("JANEIRO")) && (c.includes("JAN") || c.includes("JANEIRO"))) return true;
+                if ((compSelUpper.includes("FEV") || compSelUpper.includes("FEVEREIRO")) && (c.includes("FEV") || c.includes("FEVEREIRO"))) return true;
+                if ((compSelUpper.includes("MAR") || compSelUpper.includes("MARCO") || compSelUpper.includes("MARCO")) && (c.includes("MAR") || c.includes("MARCO"))) return true;
+                if ((compSelUpper.includes("ABR") || compSelUpper.includes("ABRIL")) && (c.includes("ABR") || c.includes("ABRIL"))) return true;
+                if ((compSelUpper.includes("MAI") || compSelUpper.includes("MAIO")) && (c.includes("MAI") || c.includes("MAIO"))) return true;
+                if ((compSelUpper.includes("JUN") || compSelUpper.includes("JUNHO")) && (c.includes("JUN") || c.includes("JUNHO"))) return true;
+                if ((compSelUpper.includes("JUL") || compSelUpper.includes("JULHO")) && (c.includes("JUL") || c.includes("JULHO"))) return true;
+                if ((compSelUpper.includes("AGO") || compSelUpper.includes("AGOSTO")) && (c.includes("AGO") || c.includes("AGOSTO"))) return true;
+                if ((compSelUpper.includes("SET") || compSelUpper.includes("SETEMBRO")) && (c.includes("SET") || c.includes("SETEMBRO"))) return true;
+                if ((compSelUpper.includes("OUT") || compSelUpper.includes("OUTUBRO")) && (c.includes("OUT") || c.includes("OUTUBRO"))) return true;
+                return c === compSelUpper;
+            });
+        }
+
+        if (!dadosFiltrados || dadosFiltrados.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="23" style="text-align: center; color: var(--text-sub); padding: 20px;">Nenhum registro encontrado para esta competência/unidade.</td></tr>`;
+            return;
+        }
+
+        dadosFiltrados.forEach(row => {
+            const atestado = (row.atestoFiscal || '').toUpperCase().trim() === 'SIM';
+            let botaoPdfHtml = atestado ? `<button class="btn btn-purple btn-sm" onclick="solicitarDownloadPdfSEITabela('${row.id}')">📄 PDF SEI</button>` : `-`;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${row.servico || '-'}</td>
+                <td>${row.unidade || '-'}</td>
+                <td>${formatarDataBR(row.competencia)}</td>
+                <td>${row.tipo || '-'}</td>
+                <td>${row.formaPagamento || '-'}</td>
+                <td>${row.monitoramento || '-'}</td>
+                <td>${row.sei || '-'}</td>
+                <td>${row.seiStatus || '-'}</td>
+                <td>${formatarMoedaBR(row.valorAp)}</td>
+                <td>${formatarMoedaBR(row.valorGl)}</td>
+                <td>${formatarMoedaBR(row.valorAprov)}</td>
+                <td>${formatarDataBR(row.dataPublicacao)}</td>
+                <td>${formatarDataBR(row.dataEnvio)}</td>
+                <td>${formatarDataBR(row.dataRetorno)}</td>
+                <td>${row.recibo || '-'}</td>
+                <td>${row.atestoFiscal || 'NÃO'}</td>
+                <td>${row.orcamentoUge || '-'}</td>
+                <td>${row.pdUge || '-'}</td>
+                <td>${row.obUge || '-'}</td>
+                <td>${row.statusDgf || '-'}</td>
+                <td>${formatarMoedaBR(row.valorContrato)}</td>
+                <td>${formatarMoedaBR(row.saldoContrato)}</td>
+                <td>${botaoPdfHtml}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function povoarFiltrosDashboard() {
+        const selectServ = document.getElementById('dash-filter-servico');
+        const selectComp = document.getElementById('dash-filter-competencia');
+
+        if (selectServ) {
+            const valAtualServ = selectServ.value;
+            selectServ.innerHTML = '<option value="">TODOS OS SERVIÇOS</option>';
+            let servicosSet = new Set();
+            planilhaDados.forEach(r => {
+                if (r.servico && String(r.servico).trim() !== '') servicosSet.add(String(r.servico).trim());
+            });
+            Array.from(servicosSet).sort().forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = s;
+                selectServ.appendChild(opt);
+            });
+            selectServ.value = valAtualServ;
+        }
+
+        if (selectComp) {
+            const valAtualComp = selectComp.value;
+            selectComp.innerHTML = '<option value="">TODAS AS COMPETÊNCIAS</option>';
+            let compSet = new Set();
+            planilhaDados.forEach(r => {
+                if (r.competencia && String(r.competencia).trim() !== '') compSet.add(String(r.competencia).trim());
+            });
+            
+            let ordenados = ordenarCompetenciasCronologicamente(Array.from(compSet));
+            ordenados.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                selectComp.appendChild(opt);
+            });
+            selectComp.value = valAtualComp;
+        }
+    }
+
+    function extrairAnoDoRegistro(r) {
+        let str = r.competencia || r.dataPublicacao || "";
+        if (!str) return null;
+        if (str.includes('2025')) return 2025;
+        if (str.includes('2026')) return 2026;
+        if (str.includes('2027')) return 2027;
+        if (str.includes('/')) {
+            let partes = str.split('/');
+            if (partes.length === 3) return parseInt(partes[2]);
+            if (partes.length === 2) return parseInt(partes[1]);
+        }
+        let d = new Date(str);
+        let ano = d.getFullYear();
+        return isNaN(ano) ? null : ano;
+    }
+
+    function aoMudarAnoDashboard(ano) {
+        exercicioSelecionado = ano;
+        if (ano === "2025" || ano === "TOTAL") {
+            carregarDadosDaPlanilha("TOTAL");
+        } else {
+            povoarFiltrosDashboard();
+            renderDashboardUnidade();
+        }
+    }
+
+    function renderDashboardUnidade() {
+        const dashContainer = document.getElementById('dashboard-container');
+        if (!dashContainer || dashContainer.style.display === 'none') return;
+
+        let targetHospital = (usuarioLogado === "secretaria de saúde" || usuarioLogado === "coopanest" || usuarioLogado === "visão executiva" || usuarioLogado === "auditoria") ? visualizandoUnidadeSecretaria : usuarioLogado;
+        let unidadeDados = planilhaDados;
+        let nomeHospLabel = "TODAS AS UNIDADES";
+
+        if (targetHospital && targetHospital !== "") {
+            let nomeFiltroHospital = credentials[targetHospital] ? credentials[targetHospital].label.toUpperCase() : targetHospital.toUpperCase();
+            nomeHospLabel = nomeFiltroHospital;
+            
+            unidadeDados = unidadeDados.filter(r => {
+                let u = (r.unidade || "").toUpperCase().trim();
+                if (!u) return false;
+                
+                if (targetHospital === "hosp. getulio vargas" || nomeFiltroHospital.includes("GETÚLIO") || nomeFiltroHospital.includes("GETULIO")) {
+                    return u === "HGV" || u.includes("GETÚLIO") || u.includes("GETULIO");
+                }
+                return u.includes(nomeFiltroHospital) || nomeFiltroHospital.includes(u);
+            });
+        }
+
+        document.getElementById('dashboard-main-title').innerText = `DASHBOARD DE MONITORAMENTO - ${nomeHospLabel}`;
+
+        const filterAno = document.getElementById('dash-filter-ano').value;
+        const filterComp = document.getElementById('dash-filter-competencia').value;
+        const filterServico = document.getElementById('dash-filter-servico').value;
+        const filterStatus = document.getElementById('dash-filter-status').value;
+
+        if (filterAno && filterAno !== "TODOS") {
+            unidadeDados = unidadeDados.filter(r => {
+                let compUpper = (r.competencia || "").toUpperCase().trim();
+                let e2025 = compUpper.includes("2025") || compUpper.includes("NOV.2025") || compUpper.includes("DEZ.2025") || compUpper.includes("NOVEMBRO.2025") || compUpper.includes("DEZEMBRO.2025");
+                
+                if (filterAno === "2025") {
+                    return e2025;
+                } else if (filterAno === "2026") {
+                    return !e2025;
+                }
+                return true;
+            });
+        }
+
+        if (filterComp) {
+            let compSelUpper = padronizarNomeCompetencia(filterComp);
+            unidadeDados = unidadeDados.filter(r => {
+                let c = padronizarNomeCompetencia(r.competencia);
+                if ((compSelUpper.includes("DEZ") || compSelUpper.includes("DEZEMBRO")) && (c.includes("DEZ") || c.includes("DEZEMBRO"))) return true;
+                if ((compSelUpper.includes("NOV") || compSelUpper.includes("NOVEMBRO")) && (c.includes("NOV") || c.includes("NOVEMBRO"))) return true;
+                return c === compSelUpper;
+            });
+        }
+
+        if (filterServico) {
+            unidadeDados = unidadeDados.filter(r => (r.servico || '').toUpperCase().trim() === filterServico.toUpperCase().trim());
+        }
+
+        if (filterStatus) {
+            unidadeDados = unidadeDados.filter(r => (r.statusDgf || '').toUpperCase().trim() === filterStatus.toUpperCase().trim());
+        }
+
+        dadosFiltradosDashboard = unidadeDados;
+
+        let totalValAp = 0, totalValGl = 0, totalValAprov = 0, valorPago = 0, valorAPagar = 0, countAtestados = 0;
+        let somaDiasEnvioOB = 0, qtdComOB = 0;
+
+        const tableBody = document.getElementById('dash-summary-table');
+        tableBody.innerHTML = '';
+
+        if (!unidadeDados || unidadeDados.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-sub); padding: 15px;">Nenhum registro encontrado para os filtros selecionados.</td></tr>`;
+        } else {
+            unidadeDados.forEach(r => {
+                const ap = desformatarMoeda(r.valorAp);
+                const gl = desformatarMoeda(r.valorGl);
+                const aprov = desformatarMoeda(r.valorAprov) || (ap - gl);
+                const stDgf = (r.statusDgf || '').toUpperCase().trim();
+                const possuiOB = r.obUge && String(r.obUge).trim() !== "";
+
+                totalValAp += ap;
+                totalValGl += gl;
+                totalValAprov += aprov;
+
+                if (stDgf === "PAGO" || possuiOB) {
+                    valorPago += aprov;
+                }
+
+                if ((r.atestoFiscal || '').toUpperCase().trim() === 'SIM') countAtestados++;
+
+                if (r.dataEnvio && r.obUge) {
+                    let dias = calcularDiferencaDias(r.dataEnvio);
+                    if (dias > 0) { somaDiasEnvioOB += dias; qtdComOB++; }
+                }
+
+                let anoExibicao = extrairAnoDoRegistro(r) || '-';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${r.servico || '-'}</td>
+                    <td>${formatarDataBR(r.competencia)}</td>
+                    <td>${anoExibicao}</td>
+                    <td>${r.sei || '-'}</td>
+                    <td>${formatarMoedaBR(r.valorAp)}</td>
+                    <td>${formatarMoedaBR(r.valorGl)}</td>
+                    <td>${formatarMoedaBR(r.valorAprov)}</td>
+                    <td>${r.atestoFiscal || 'NÃO'}</td>
+                    <td>${r.pdUge || '-'}</td>
+                    <td>${r.obUge || '-'}</td>
+                    <td>${r.statusDgf || '-'}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        valorAPagar = totalValAprov - valorPago;
+        if (valorAPagar < 0) valorAPagar = 0;
+
+        const mediaDias = qtdComOB > 0 ? Math.round(somaDiasEnvioOB / qtdComOB) : 0;
+        
+        document.getElementById('dash-card-ano').innerText = filterAno || "TODOS";
+        document.getElementById('dash-card-comp').innerText = filterComp || "TODAS";
+        document.getElementById('dash-card-servico').innerText = filterServico ? (filterServico.length > 12 ? filterServico.substring(0,12)+"..." : filterServico) : "TODOS";
+        document.getElementById('dash-card-status').innerText = filterStatus ? (filterStatus.length > 12 ? filterStatus.substring(0,12)+"..." : filterStatus) : "GERAL";
+
+        document.getElementById('dash-total-proc').innerText = unidadeDados.length;
+        document.getElementById('dash-total-val').innerText = formatarMoedaBR(totalValAp);
+        document.getElementById('dash-total-glo').innerText = formatarMoedaBR(totalValGl);
+        document.getElementById('dash-valor-aprovado').innerText = formatarMoedaBR(totalValAprov);
+        document.getElementById('dash-valor-pago').innerText = formatarMoedaBR(valorPago);
+        document.getElementById('dash-valor-a-pagar').innerText = formatarMoedaBR(valorAPagar);
+        document.getElementById('dash-atestados').innerText = countAtestados;
+        document.getElementById('dash-tempo-medio').innerText = mediaDias + ' dias';
+
+        const selectQuery = document.getElementById('dash-query-select');
+        if (selectQuery && selectQuery.value) {
+            executarConsultaDashboard(selectQuery.value);
+        }
+    }
+
+    function avaliarStatusDGFAutomatico() {
+        const sei = document.getElementById('field-sei').value.trim();
+        const dataEnvio = document.getElementById('field-data-envio').value.trim();
+        const valAp = desformatarMoeda(document.getElementById('field-valor-ap').value);
+        const valGl = desformatarMoeda(document.getElementById('field-valor-gl').value);
+        const valAprov = desformatarMoeda(document.getElementById('field-valor-aprov').value);
+        const atesto = document.getElementById('field-atesto-fiscal').value.trim().toUpperCase();
+        const pd = document.getElementById('field-pd-uge').value.trim();
+        const ob = document.getElementById('field-ob-uge').value.trim();
+        const inputStatusDgf = document.getElementById('field-status-dgf');
+
+        if (ob !== "") {
+            inputStatusDgf.value = "PAGO";
+        } else if (pd !== "") {
+            inputStatusDgf.value = "AGUARDANDO SEFAZ";
+        } else if (atesto === "SIM") {
+            inputStatusDgf.value = "Aguardando hospital";
+        } else if (valAp > 0 || valGl > 0 || valAprov > 0 || dataEnvio !== "") {
+            inputStatusDgf.value = "AGUARDANDO ENVIO DO RECIBO (COOPANEST)";
+        } else if (sei !== "") {
+            inputStatusDgf.value = "EM PROCESSO DE AUDITORIA";
+        } else {
+            inputStatusDgf.value = "AGUARDANDO Nº DO SEI";
+        }
+    }
+
+    function gerarPDFDespachoSEI(dados) {
+        const atestoConfirmado = dados && dados.atestoFiscal && dados.atestoFiscal.toString().trim().toUpperCase() === 'SIM';
+
+        if (!atestoConfirmado) {
+            alert('O PDF só pode ser gerado quando o Atesto Fiscal estiver marcado como "SIM".');
+            return;
+        }
+
+        const printWindow = window.open('', '_blank', 'width=850,height=900');
+        printWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+        <meta charset="UTF-8">
+        <title>Despacho SEI - Relatório de Preenchimento</title>
+        <style>
+        body { font-family: Arial, sans-serif; padding: 30px; color: #000; background: #fff; line-height: 1.5; }
+        .titulo-doc { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 8px; text-transform: uppercase; }
+        .texto-atesto { font-size: 13px; text-align: justify; margin-bottom: 20px; }
+        .texto-atesto p { margin-bottom: 12px; text-indent: 25px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #333; padding: 8px 10px; text-align: left; font-size: 12px; }
+        th { background-color: #f1f5f9; font-weight: bold; width: 38%; }
+        .footer { margin-top: 30px; font-size: 11px; text-align: right; color: #555; }
+        </style>
+        </head>
+        <body>
+        <div class="titulo-doc">ATESTO DE SERVIÇO PRESTADO</div>
+
+        <div class="texto-atesto">
+        <p>Atesto, para os devidos fins, que os serviços de anestesiologia constantes no <strong>Recibo nº ${dados.recibo || '-'}</strong>, validados por meio do <strong>Relatório de Auditoria GEAUD/CTAPE (89659601)</strong>, referentes à competência <strong>${formatarDataBR(dados.competencia)}</strong>, foram devidamente prestados em conformidade com o <strong>Termo de Credenciamento nº 169/2025</strong>, encontrando-se em conformidade com as disposições contratuais.</p>
+
+        <p>Declaro que os valores atestados corresponden ao montante aprovado em auditoria, estando a documentação fiscal regular quanto aos aspectos formais e materiais, apta à liquidação da despesa.</p>
+
+        <p>Atesto, ainda, que o presente processo encontra-se devidamente instruído, atendendo às exigências da <strong>Lei nº 14.133/2021</strong>, especialmente ao disposto no <strong>art. 117</strong>.</p>
+
+        <p>Encaminhe-se ao setor competente para liquidação e pagamento.</p>
+        </div>
+
+        <table>
+        <tr><th>Unidade Hospitalar:</th><td>${dados.unidade || '-'}</td></tr>
+        <tr><th>Serviço:</th><td>${dados.servico || '-'}</td></tr>
+        <tr><th>Competência:</th><td>${formatarDataBR(dados.competencia)}</td></tr>
+        <tr><th>Tipo de Processo:</th><td>${dados.tipo || '-'}</td></tr>
+        <tr><th>Forma de Pagamento:</th><td>${dados.formaPagamento || '-'}</td></tr>
+        <tr><th>Monitoramento:</th><td>${dados.monitoramento || '-'}</td></tr>
+        <tr><th>Nº Processo SEI:</th><td>${dados.sei || '-'}</td></tr>
+        <tr><th>Status SEI (Robô):</th><td>${dados.seiStatus || '-'}</td></tr>
+        <tr><th>Valor Apresentado:</th><td>${formatarMoedaBR(dados.valorAp)}</td></tr>
+        <tr><th>Valor Glosado:</th><td>${formatarMoedaBR(dados.valorGl)}</td></tr>
+        <tr><th>Valor Aprovado:</th><td>${formatarMoedaBR(dados.valorAprov)}</td></tr>
+        <tr><th>Data Publicação:</th><td>${formatarDataBR(dados.dataPublicacao)}</td></tr>
+        <tr><th>Data Envio p/ Coopanest-PE:</th><td>${formatarDataBR(dados.dataEnvio)}</td></tr>
+        <tr><th>Data de Retorno:</th><td>${formatarDataBR(dados.dataRetorno)}</td></tr>
+        <tr><th>Recibo N.º:</th><td>${dados.recibo || '-'}</td></tr>
+        <tr><th>Atesto Fiscal:</th><td>${dados.atestoFiscal || 'NÃO'}</td></tr>
+        </table>
+
+        <div class="footer">Gerado em: ${new Date().toLocaleString('pt-BR')}</div>
+        <script>
+            window.onload = function() { window.print(); };
+        <\/script>
+        </body>
+        </html>
+        `);
+        printWindow.document.close();
+    }
+
+    function solicitarDownloadPdfSEITabela(idLinha) {
+        linhaSelecionadaParaPdfSEI = planilhaDados.find(r => String(r.id) === String(idLinha));
+        if (!linhaSelecionadaParaPdfSEI) return;
+        document.getElementById('sei-download-senha').value = "";
+        document.getElementById('modal-download-sei-auth').style.display = 'flex';
+    }
+
+    function solicitarDownloadPdfSEIForm() {
+        const id = document.getElementById('select-row').value;
+        if (id) solicitarDownloadPdfSEITabela(id);
+    }
+
+    function fecharModalDownloadSEI() { document.getElementById('modal-download-sei-auth').style.display = 'none'; }
+
+    function confirmarDownloadPdfSEI() {
+        const senhaDigitada = document.getElementById('sei-download-senha').value;
+        const senhaAtestoCorreta = credentials[usuarioLogado]?.atestoPass || "";
+        if (senhaAtestoCorreta !== "" && senhaDigitada !== senhaAtestoCorreta) { alert("SENHA INVALIDA"); return; }
+        fecharModalDownloadSEI();
+        if (linhaSelecionadaParaPdfSEI) gerarPDFDespachoSEI(linhaSelecionadaParaPdfSEI);
+    }
+
+    function saveData() {
+        if (usuarioLogado === "coopanest" || usuarioLogado === "visão executiva") {
+            alert("Perfil apenas de visualização.");
+            return;
+        }
+
+        const id = document.getElementById('select-row').value;
+        if (!id) { alert("Selecione uma linha!"); return; }
+
+        const dados = {
+            tipo: document.getElementById('field-tipo').value,
+            formaPagamento: document.getElementById('field-forma-pagamento').value,
+            valorAp: desformatarMoeda(document.getElementById('field-valor-ap').value),
+            valorGl: desformatarMoeda(document.getElementById('field-valor-gl').value),
+            valorAprov: desformatarMoeda(document.getElementById('field-valor-aprov').value),
+            dataPublicacao: document.getElementById('field-data-publicacao').value,
+            dataEnvio: document.getElementById('field-data-envio').value,
+            dataRetorno: document.getElementById('field-data-retorno').value,
+            recibo: document.getElementById('field-recibo').value,
+            atestoFiscal: document.getElementById('field-atesto-fiscal').value,
+            orcamentoUge: document.getElementById('field-orcamento-uge').value,
+            pdUge: document.getElementById('field-pd-uge').value,
+            obUge: document.getElementById('field-ob-uge').value,
+            statusDgf: document.getElementById('field-status-dgf').value,
+            valorContrato: desformatarMoeda(document.getElementById('field-valor-contrato').value),
+            saldoContrato: desformatarMoeda(document.getElementById('field-saldo-contrato').value),
+            servico: document.getElementById('field-servico').value,
+            unidade: document.getElementById('field-unidade').value,
+            competencia: competenciaSelecionada,
+            sei: document.getElementById('field-sei').value,
+            monitoramento: document.getElementById('field-monitoramento').value,
+            seiStatus: document.getElementById('field-sei-status').value
+        };
+
+        showSpinner();
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run.withSuccessHandler(function() {
+                hideSpinner();
+                let descricaoAcao = "Atualização de dados";
+                if (dados.atestoFiscal === "SIM" && assinanteAtual) descricaoAcao += ` (Atestado por: ${assinanteAtual})`;
+                registrarLog(id, descricaoAcao, assinanteAtual);
+                assinanteAtual = "";
+                alert("Dados salvos com sucesso!");
+                goToHome();
+            }).withFailureHandler(function(err) {
+                hideSpinner();
+                alert("Erro: " + (err.message || err));
+            }).salvarDadosLinha(competenciaSelecionada, id, dados);
+        } else {
+            hideSpinner();
+            let idx = planilhaDados.findIndex(r => String(r.id) === String(id));
+            if(idx !== -1) {
+                planilhaDados[idx] = { ...planilhaDados[idx], ...dados };
+            }
+            registrarLog(id, "Atualização de dados");
+            alert("Dados salvos localmente!");
+            goToHome();
+        }
+    }
+
+    function editData() {
+        if (usuarioLogado === "coopanest" || usuarioLogado === "visão executiva") return;
+        aplicarRegrasBloqueioCamposPorPerfil();
+    }
+
+    function deleteData() {
+        if (usuarioLogado === "coopanest" || usuarioLogado === "visão executiva") return;
+        const id = document.getElementById('select-row').value;
+        if(!id) return;
+
+        const rowExistente = planilhaDados.find(r => String(r.id) === String(id));
+        if(!rowExistente) return;
+
+        if(confirm("Deseja limpar os lançamentos desta linha? (Serviço, Unidade, Competência e Tipo de Processo serão mantidos)")) {
+            const dadosPreservados = {
+                id: rowExistente.id,
+                servico: rowExistente.servico || document.getElementById('field-servico').value,
+                unidade: rowExistente.unidade || document.getElementById('field-unidade').value,
+                competencia: rowExistente.competencia || competenciaSelecionada,
+                tipo: rowExistente.tipo || document.getElementById('field-tipo').value,
+                formaPagamento: "",
+                monitoramento: "",
+                sei: "",
+                seiStatus: "",
+                valorAp: 0,
+                valorGl: 0,
+                valorAprov: 0,
+                dataPublicacao: "",
+                dataEnvio: "",
+                dataRetorno: "",
+                recibo: "",
+                atestoFiscal: "NÃO",
+                orcamentoUge: "",
+                pdUge: "",
+                obUge: "",
+                statusDgf: "AGUARDANDO Nº DO SEI",
+                valorContrato: 0,
+                saldoContrato: 0
+            };
+
+            showSpinner();
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run.withSuccessHandler(function() {
+                    hideSpinner();
+                    registrarLog(id, "Limpeza de dados mantendo chaves do serviço");
+                    alert("Lançamento limpo com sucesso!");
+                    goToHome();
+                }).withFailureHandler(function(err) { 
+                    hideSpinner(); 
+                    alert("Erro ao limpar dados: " + (err.message || err));
+                }).salvarDadosLinha(competenciaSelecionada, id, dadosPreservados);
+            } else {
+                hideSpinner();
+                let idx = planilhaDados.findIndex(r => String(r.id) === String(id));
+                if(idx !== -1) {
+                    planilhaDados[idx] = dadosPreservados;
+                }
+                registrarLog(id, "Limpeza de dados mantendo chaves do serviço");
+                alert("Lançamento limpo localmente!");
+                goToHome();
+            }
+        }
+    }
+
+    function populateDropdown() {
+        const select = document.getElementById('select-row');
+        select.innerHTML = '';
+        let dadosFiltrados = planilhaDados;
+        let targetHospital = (usuarioLogado === "secretaria de saúde" || usuarioLogado === "coopanest" || usuarioLogado === "visão executiva" || usuarioLogado === "auditoria") ? visualizandoUnidadeSecretaria : usuarioLogado;
+        
+        if (targetHospital && targetHospital !== "") {
+            let nomeFiltroHospital = credentials[targetHospital] ? credentials[targetHospital].label.toUpperCase() : targetHospital.toUpperCase();
+            dadosFiltrados = dadosFiltrados.filter(r => {
+                let u = (r.unidade || "").toUpperCase().trim();
+                if (targetHospital === "hosp. getulio vargas" || nomeFiltroHospital.includes("GETÚLIO") || nomeFiltroHospital.includes("GETULIO")) {
+                    return u === "HGV" || u.includes("GETÚLIO") || u.includes("GETULIO");
+                }
+                return u.includes(nomeFiltroHospital) || nomeFiltroHospital.includes(u);
+            });
+        }
+
+        if (!dadosFiltrados || dadosFiltrados.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = "";
+            opt.textContent = "-- Nenhum registro encontrado --";
+            select.appendChild(opt);
+            return;
+        }
+
+        dadosFiltrados.forEach(row => {
+            const opt = document.createElement('option');
+            opt.value = row.id;
+            opt.textContent = `${row.unidade || 'UNIDADE'} - ${row.servico || 'SERVIÇO'} (${row.tipo || 'GERAL'})`;
+            select.appendChild(opt);
+        });
+
+        if (dadosFiltrados.length > 0) {
+            carregarDadosLinhaFormulario();
+        }
+    }
+
+    function toggleUnidadesMenu() {
+        const dropdown = document.getElementById('unidades-dropdown');
+        dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
+    }
+
+    function selecionarUnidadeSecretaria(unidadeSlug, nomeExibicao) {
+        visualizandoUnidadeSecretaria = unidadeSlug;
+        document.getElementById('home-title').innerText = "Painel de Monitoramento - " + nomeExibicao;
+        switchScreen('screen-home');
+        carregarCompetencias();
+    }
+
+    function voltarParaMenuOuLogin() {
+        if (usuarioLogado === "secretaria de saúde" || usuarioLogado === "coopanest" || usuarioLogado === "visão executiva" || usuarioLogado === "auditoria") {
+            switchScreen('screen-secretaria-unidades');
+        } else {
+            logout();
+        }
+    }
+
+    function goToHome() {
+        switchScreen('screen-home');
+        carregarDadosDaPlanilha(competenciaSelecionada);
+    }
+
+    function goToForm() {
+        if (usuarioLogado === "coopanest" || usuarioLogado === "visão executiva") { alert("Acesso restrito."); return; }
+        switchScreen('screen-form');
+        document.getElementById('competencia-atual-titulo').innerText = competenciaSelecionada;
+        populateDropdown();
+        carregarDadosLinhaFormulario();
+        aplicarRegrasBloqueioCamposPorPerfil();
+    }
+
+    function logout() {
+        usuarioLogado = "";
+        visualizandoUnidadeSecretaria = "";
+        competenciaSelecionada = "";
+        planilhaDados = []; 
+
+        localStorage.removeItem('simpa_logged_user');
+        localStorage.removeItem('simpa_active_screen');
+        localStorage.removeItem('simpa_competencia');
+        localStorage.removeItem('simpa_exercicio');
+
+        document.getElementById('login-pass').value = "";
+        
+        const dashCont = document.getElementById('dashboard-container');
+        const normCont = document.getElementById('normal-table-container');
+        if (dashCont && normCont) {
+            dashCont.style.display = 'none';
+            normCont.style.display = 'block';
+        }
+
+        switchScreen('screen-login');
+    }
+
+    function verifyLoginAuto(user) {
+        if (!credentials[user]) {
+            credentials[user] = { pass: "", atestoPass: "", screen: "home", label: user };
+        }
+        usuarioLogado = user;
+        const targetScreen = credentials[user].screen;
+        
+        if (targetScreen === "secretaria") {
+            document.getElementById('label-painel-usuario').innerText = "PAINEL " + credentials[user].label.toUpperCase();
+            document.getElementById('titulo-painel-unidades').innerText = "Painel Administrativo - " + credentials[user].label;
+            switchScreen('screen-secretaria-unidades');
+        } else {
+            visualizandoUnidadeSecretaria = user;
+            document.getElementById('home-title').innerText = "Painel de Monitoramento - " + credentials[user].label;
+            switchScreen('screen-home');
+            carregarCompetencias();
+        }
+    }
+
+    function verifyLogin() {
+        const userSelect = document.getElementById('login-user');
+        const user = userSelect.value;
+        const pass = document.getElementById('login-pass').value.trim();
+
+        if (!credentials[user]) {
+            credentials[user] = { pass: "", atestoPass: "", screen: "home", label: user };
+        }
+
+        const senhaCadastrada = credentials[user].pass;
+        
+        if (pass === senhaCadastrada || senhaCadastrada === "") {
+            verifyLoginAuto(user);
+        } else {
+            alert("SENHA INVALIDA");
+        }
+    }
+
+    function carregarDadosLinhaFormulario() {
+        const id = document.getElementById('select-row').value;
+        const row = planilhaDados.find(r => String(r.id) === String(id));
+        if(!row) return;
+
+        document.getElementById('field-servico').value = row.servico || '';
+        document.getElementById('field-unidade').value = row.unidade || '';
+        document.getElementById('field-tipo').value = row.tipo || '';
+        document.getElementById('field-forma-pagamento').value = row.formaPagamento || '';
+        document.getElementById('field-monitoramento').value = row.monitoramento || '';
+        document.getElementById('field-sei').value = row.sei || '';
+        document.getElementById('field-sei-status').value = row.seiStatus || '';
+        document.getElementById('field-valor-ap').value = formatarMoedaBR(row.valorAp);
+        document.getElementById('field-valor-gl').value = formatarMoedaBR(row.valorGl);
+        document.getElementById('field-valor-aprov').value = formatarMoedaBR(row.valorAprov);
+        document.getElementById('field-data-publicacao').value = row.dataPublicacao || '';
+        document.getElementById('field-data-envio').value = row.dataEnvio || '';
+        document.getElementById('field-data-retorno').value = row.dataRetorno || '';
+        document.getElementById('field-recibo').value = row.recibo || '';
+        
+        const atestoVal = row.atestoFiscal || 'NÃO';
+        document.getElementById('field-atesto-fiscal').value = atestoVal;
+        estadoAnteriorAtesto = atestoVal;
+
+        const btnPdfForm = document.getElementById('btn-form-download-sei');
+        if (atestoVal === 'SIM') btnPdfForm.style.display = 'inline-block';
+        else btnPdfForm.style.display = 'none';
+
+        document.getElementById('field-orcamento-uge').value = row.orcamentoUge || '';
+        document.getElementById('field-pd-uge').value = row.pdUge || '';
+        document.getElementById('field-ob-uge').value = row.obUge || '';
+        document.getElementById('field-status-dgf').value = row.statusDgf || '';
+        document.getElementById('field-valor-contrato').value = formatarMoedaBR(row.valorContrato);
+        document.getElementById('field-saldo-contrato').value = formatarMoedaBR(row.saldoContrato);
+        
+        avaliarStatusDGFAutomatico();
+        aplicarRegrasBloqueioCamposPorPerfil();
+    }
+
+    function aplicarRegrasBloqueioCamposPorPerfil() {
+        document.getElementById('select-row').disabled = false;
+        document.getElementById('field-servico').readOnly = false;
+        document.getElementById('field-unidade').readOnly = false;
+        document.getElementById('field-tipo').readOnly = false;
+        document.getElementById('field-forma-pagamento').disabled = false;
+        document.getElementById('field-monitoramento').readOnly = false;
+        document.getElementById('field-sei').readOnly = false;
+        document.getElementById('field-sei-status').readOnly = false;
+        document.getElementById('field-valor-ap').readOnly = false;
+        document.getElementById('field-valor-gl').readOnly = false;
+        document.getElementById('field-valor-aprov').readOnly = true;
+        document.getElementById('field-data-publicacao').readOnly = false;
+        document.getElementById('field-data-envio').readOnly = false;
+        document.getElementById('field-data-retorno').readOnly = false;
+        document.getElementById('field-recibo').readOnly = false;
+        document.getElementById('field-atesto-fiscal').disabled = false;
+        document.getElementById('field-orcamento-uge').readOnly = false;
+        document.getElementById('field-pd-uge').readOnly = false;
+        document.getElementById('field-ob-uge').readOnly = false;
+        document.getElementById('field-status-dgf').readOnly = true;
+        document.getElementById('field-valor-contrato').readOnly = false;
+        document.getElementById('field-saldo-contrato').readOnly = false;
+
+        if (usuarioLogado === "coopanest" || usuarioLogado === "visão executiva") {
+            document.getElementById('select-row').disabled = true;
+            document.getElementById('field-tipo').readOnly = true;
+            document.getElementById('field-forma-pagamento').disabled = true;
+            document.getElementById('field-sei').readOnly = true;
+            document.getElementById('field-valor-ap').readOnly = true;
+            document.getElementById('field-valor-gl').readOnly = true;
+            document.getElementById('field-data-publicacao').readOnly = true;
+            document.getElementById('field-data-envio').readOnly = true;
+            document.getElementById('field-data-retorno').readOnly = true;
+            document.getElementById('field-recibo').readOnly = true;
+            document.getElementById('field-atesto-fiscal').disabled = true;
+            document.getElementById('field-orcamento-uge').readOnly = true;
+            document.getElementById('field-pd-uge').readOnly = true;
+            document.getElementById('field-ob-uge').readOnly = true;
+            document.getElementById('field-valor-contrato').readOnly = true;
+            document.getElementById('field-saldo-contrato').readOnly = true;
+        }
+    }
+
+    function aplicarMascaraMoeda(input) {
+        let value = input.value.replace(/\D/g, "");
+        value = (value / 100).toFixed(2) + "";
+        value = value.replace(".", ",").replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+        input.value = "R$ " + value;
+    }
+
+    function desformatarMoeda(valorStr) {
+        if(!valorStr) return 0;
+        if(typeof valorStr === 'number') return valorStr;
+        let limpo = valorStr.replace("R$", "").replace(/\./g, "").replace(",", ".").trim();
+        return parseFloat(limpo) || 0;
+    }
+
+    function formatarMoedaBR(val) {
+        let num = parseFloat(val) || 0;
+        return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function formatarDataBR(dataStr) {
+        if(!dataStr) return '-';
+        if(dataStr.includes('T')) dataStr = dataStr.split('T')[0];
+        let partes = dataStr.split('-');
+        if(partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        return dataStr;
+    }
+
+    function calcularDiferencaDias(dataEnvioStr) {
+        if (!dataEnvioStr) return 0;
+        let diffTime = Math.abs(new Date() - new Date(dataEnvioStr));
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    function calcularValorAprovado() {
+        let ap = desformatarMoeda(document.getElementById('field-valor-ap').value);
+        let gl = desformatarMoeda(document.getElementById('field-valor-gl').value);
+        let aprov = ap - gl;
+        if(aprov < 0) aprov = 0;
+        document.getElementById('field-valor-aprov').value = formatarMoedaBR(aprov);
+    }
+
+    function tratarMudancaAtesto(val) {
+        if (val === "SIM" && estadoAnteriorAtesto !== "SIM") {
+            document.getElementById('modal-atesto-auth').style.display = 'flex';
+        }
+        avaliarStatusDGFAutomatico();
+    }
+
+    function fecharModalAtestoAuth(confirmado) {
+        document.getElementById('modal-atesto-auth').style.display = 'none';
+        if(!confirmado) document.getElementById('field-atesto-fiscal').value = estadoAnteriorAtesto;
+    }
+
+    function confirmarAssinaturaAtesto() {
+        const pass = document.getElementById('atesto-senha').value;
+        const usuarioAssinante = document.getElementById('atesto-usuario').value;
+        const senhaAtestoCorreta = credentials[usuarioLogado]?.atestoPass || "";
+
+        if(pass === senhaAtestoCorreta || senhaAtestoCorreta === "") {
+            assinanteAtual = usuarioAssinante;
+            estadoAnteriorAtesto = "SIM";
+            fecharModalAtestoAuth(true);
+            alert("Atesto autorizado com sucesso!");
+        } else {
+            alert("SENHA INVALIDA");
+        }
+    }
+
+    function exportarTabelaExcelXLSX() {
+        const table = document.getElementById("main-data-table");
+        const wb = XLSX.utils.table_to_book(table, { sheet: "Monitoramento" });
+        XLSX.writeFile(wb, `Monitoramento_${competenciaSelecionada}.xlsx`);
+    }
+
+    function registrarLog(linhaId, acao, nomeAssinante = "") {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run.registrarLogServidor(
+                usuarioLogado.toUpperCase(),
+                competenciaSelecionada || "-",
+                linhaId || "-",
+                acao,
+                nomeAssinante
+            );
+        }
+    }
+
+    function abrirModalLogs() {
+        document.getElementById('modal-logs').style.display = 'flex';
+        if (usuarioLogado === "secretaria de saúde") {
+            document.getElementById('btn-limpar-historico-master').style.display = 'inline-block';
+        } else {
+            document.getElementById('btn-limpar-historico-master').style.display = 'none';
+        }
+        
+        showSpinner();
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run.withSuccessHandler(function(logsServer) {
+                hideSpinner();
+                historicoLogsLocal = logsServer || [];
+                renderizarLogsModal();
+            }).withFailureHandler(function() {
+                hideSpinner();
+                renderizarLogsModal();
+            }).obterLogs();
+        } else {
+            hideSpinner();
+            renderizarLogsModal();
+        }
+    }
+
+    function fecharModalLogs() { document.getElementById('modal-logs').style.display = 'none'; }
+
+    function renderizarLogsModal() {
+        const div = document.getElementById('logs-container-list');
+        div.innerHTML = '';
+        if(historicoLogsLocal.length === 0) {
+            div.innerHTML = '<p style="color: var(--text-sub); text-align: center;">Nenhum registro encontrado no histórico da planilha.</p>';
+            return;
+        }
+
+        let logsParaExibir = [];
+        if (!modoPaginadoLogs) {
+            logsParaExibir = historicoLogsLocal.slice(0, 5);
+            document.getElementById('btn-mostrar-mais-logs').style.display = 'inline-block';
+            document.getElementById('pagination-controls').style.display = 'none';
+        } else {
+            document.getElementById('btn-mostrar-mais-logs').style.display = 'none';
+            document.getElementById('pagination-controls').style.display = 'flex';
+            const totalPaginas = Math.ceil(historicoLogsLocal.length / LOGS_POR_PAGINA);
+            if (paginaAtualLogs > totalPaginas) paginaAtualLogs = totalPaginas;
+            const inicio = (paginaAtualLogs - 1) * LOGS_POR_PAGINA;
+            logsParaExibir = historicoLogsLocal.slice(inicio, inicio + LOGS_POR_PAGINA);
+            document.getElementById('page-indicator').innerText = `${paginaAtualLogs}/${totalPaginas}`;
+        }
+
+        logsParaExibir.forEach(l => {
+            const card = document.createElement('div');
+            card.style.cssText = "background: var(--bg-card); padding: 6px; border-radius: 4px; margin-bottom: 4px; border: 1px solid var(--border-color);";
+            card.innerHTML = `<strong>${l.usuario}</strong> - <span style="color: var(--text-sub);">${l.dataHora}</span><br><span>${l.acao}</span>`;
+            div.appendChild(card);
+        });
+    }
+
+    function expandirLogsPaginados() { modoPaginadoLogs = true; paginaAtualLogs = 1; renderizarLogsModal(); }
+    function mudarPaginaLogs(delta) { paginaAtualLogs += delta; renderizarLogsModal(); }
+
+    function solicitarLimpezaHistorico() {
+        if (usuarioLogado !== "secretaria de saúde") return;
+        if (confirm("Deseja limpar todo o histórico armazenado na planilha?")) {
+            showSpinner();
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run.withSuccessHandler(function() {
+                    hideSpinner();
+                    historicoLogsLocal = [];
+                    renderizarLogsModal();
+                    alert("Histórico da planilha limpo!");
+                }).withFailureHandler(function() { hideSpinner(); }).limparLogs();
+            } else {
+                hideSpinner();
+            }
+        }
+    }
+
+    function abrirModalLakehouse() { 
+        document.getElementById('modal-lakehouse').style.display = 'flex';
+        const select = document.getElementById('lakehouse-select-pergunta');
+        select.value = "";
+        document.getElementById('lakehouse-resultado-texto').innerText = "Selecione uma pergunta acima para iniciar a análise.";
+        
+        showSpinner();
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run.withSuccessHandler(function(dados) {
+                hideSpinner();
+                planilhaDados = dados || [];
+                if (select.value) {
+                    executarConsultaLakehouse(select.value);
+                }
+            }).withFailureHandler(function(err) {
+                hideSpinner();
+                document.getElementById('lakehouse-resultado-texto').innerText = "Erro ao carregar dados do servidor.";
+            }).dadosDaCompetencia('TOTAL');
+        } else {
+            hideSpinner();
+        }
+    }
+
+    function fecharModalLakehouse() { document.getElementById('modal-lakehouse').style.display = 'none'; }
+
+    function executarConsultaLakehouse(tipo) {
+        const resText = document.getElementById('lakehouse-resultado-texto');
+        
+        if (!tipo || tipo === "") { 
+            resText.innerText = "Selecione uma pergunta acima para iniciar a análise."; 
+            return; 
+        }
+
+        if (!planilhaDados || planilhaDados.length === 0) {
+            resText.innerText = "Carregando dados da rede... Por favor, aguarde a atualização.";
+            return;
+        }
+
+        if (tipo === "total_geral_apresentado") {
+            let soma = planilhaDados.reduce((acc, r) => acc + desformatarMoeda(r.valorAp), 0);
+            resText.innerText = `Valor total apresentado na rede: ${formatarMoedaBR(soma)}`;
+        } else if (tipo === "total_geral_pago") {
+            let soma = planilhaDados.filter(r => String(r.statusDgf || '').toUpperCase().trim() === "PAGO" || (r.obUge && String(r.obUge).trim() !== "")).reduce((acc, r) => acc + (desformatarMoeda(r.valorAprov) || desformatarMoeda(r.valorAp)), 0);
+            resText.innerText = `Valor total pago na rede: ${formatarMoedaBR(soma)}`;
+        } else if (tipo === "processos_atestados_rede") {
+            let count = planilhaDados.filter(r => String(r.atestoFiscal || '').toUpperCase().trim() === "SIM").length;
+            resText.innerText = `Total de processos atestados na rede: ${count} processo(s)`;
+        } else if (tipo === "hospital_maior_volume") {
+            let totaisPorHospital = {};
+            planilhaDados.forEach(r => {
+                let hosp = (r.unidade || "NÃO INFORMADO").toUpperCase().trim();
+                let v = desformatarMoeda(r.valorAp);
+                totaisPorHospital[hosp] = (totaisPorHospital[hosp] || 0) + v;
+            });
+            let maiorHosp = "";
+            let maiorVal = 0;
+            Object.keys(totaisPorHospital).forEach(h => {
+                if (totaisPorHospital[h] > maiorVal) {
+                    maiorVal = totaisPorHospital[h];
+                    maiorHosp = h;
+                }
+            });
+            resText.innerText = maiorHosp ? `Hospital com maior volume: ${maiorHosp} (${formatarMoedaBR(maiorVal)})` : "Nenhum registro encontrado.";
+        } else if (tipo === "pendencias_geral_sei") {
+            let count = planilhaDados.filter(r => !r.sei || String(r.sei).trim() === "").length;
+            resText.innerText = `Processos pendentes de SEI na rede: ${count} processo(s)`;
+        } else if (tipo === "maior_valor_glosado") {
+            let glosasPorHosp = {};
+            planilhaDados.forEach(r => {
+                let hosp = (r.unidade || "NÃO INFORMADO").toUpperCase().trim();
+                glosasPorHosp[hosp] = (glosasPorHosp[hosp] || 0) + desformatarMoeda(r.valorGl);
+            });
+            let mHosp = "", mVal = 0;
+            Object.keys(glosasPorHosp).forEach(h => {
+                if (glosasPorHosp[h] > mVal) { mVal = glosasPorHosp[h]; mHosp = h; }
+            });
+            resText.innerText = mHosp ? `Hospital com maior volume de glosas: ${mHosp} (${formatarMoedaBR(mVal)})` : "Nenhum registro de glosa encontrado.";
+        } else if (tipo === "processos_com_ob") {
+            let count = planilhaDados.filter(r => r.obUge && String(r.obUge).trim() !== "").length;
+            resText.innerText = `Total de processos com Ordem Bancária (OB) finalizada: ${count} processo(s)`;
+        } else if (tipo === "saldo_total_pendente") {
+            let somaPendente = planilhaDados.filter(r => String(r.statusDgf || '').toUpperCase().trim() !== "PAGO" && (!r.obUge || String(r.obUge).trim() === "")).reduce((acc, r) => acc + (desformatarMoeda(r.valorAprov) || desformatarMoeda(r.valorAp)), 0);
+            resText.innerText = `Montante total de pagamentos pendentes na rede: ${formatarMoedaBR(somaPendente)}`;
+        } else if (tipo === "media_dias_tramitacao") {
+            let totalDias = 0, qtd = 0;
+            planilhaDados.forEach(r => {
+                if (r.dataEnvio && r.obUge) {
+                    let d = calcularDiferencaDias(r.dataEnvio);
+                    if (d > 0) { totalDias += d; qtd++; }
+                }
+            });
+            let media = qtd > 0 ? Math.round(totalDias / qtd) : 0;
+            resText.innerText = `Tempo médio geral da rede (Envio -> OB): ${media} dias (${qtd} processos concluídos)`;
+        } else if (tipo === "processos_aguardando_sefaz") {
+            let count = planilhaDados.filter(r => String(r.statusDgf || '').toUpperCase().trim() === "AGUARDANDO SEFAZ" || (r.pdUge && !r.obUge)).length;
+            resText.innerText = `Total de processos aguardando tramitação SEFAZ/Pagamento: ${count} processo(s)`;
+        } else {
+            resText.innerText = "Consulta não reconhecida.";
+        }
+    }
+
+    function executarConsultaDashboard(tipo) {
+        const resultBox = document.getElementById('query-result');
+        const resultTitle = document.getElementById('query-result-title');
+        const resultDesc = document.getElementById('query-result-desc');
+
+        if (!tipo) {
+            resultBox.style.display = 'none';
+            return;
+        }
+
+        let unidadeDados = dadosFiltradosDashboard && dadosFiltradosDashboard.length > 0 ? dadosFiltradosDashboard : [];
+
+        if (tipo === "total_valor_apresentado") {
+            let soma = unidadeDados.reduce((acc, r) => acc + desformatarMoeda(r.valorAp), 0);
+            resultTitle.innerText = "Total de Valor Apresentado:";
+            resultDesc.innerText = formatarMoedaBR(soma);
+            resultBox.style.display = 'block';
+        } else if (tipo === "total_valor_glosado") {
+            let soma = unidadeDados.reduce((acc, r) => acc + desformatarMoeda(r.valorGl), 0);
+            resultTitle.innerText = "Total de Valor Glosado:";
+            resultDesc.innerText = formatarMoedaBR(soma);
+            resultBox.style.display = 'block';
+        } else if (tipo === "total_valor_aprovado") {
+            let soma = unidadeDados.reduce((acc, r) => acc + (desformatarMoeda(r.valorAprov) || (desformatarMoeda(r.valorAp) - desformatarMoeda(r.valorGl))), 0);
+            resultTitle.innerText = "Total Aprovado Líquido:";
+            resultDesc.innerText = formatarMoedaBR(soma);
+            resultBox.style.display = 'block';
+        } else if (tipo === "status_atesto_fiscal") {
+            const filtrados = unidadeDados.filter(r => (r.atestoFiscal || '').toUpperCase().trim() === "SIM");
+            resultTitle.innerText = "Processos Atestados:";
+            resultDesc.innerText = `${filtrados.length} processo(s) atestado(s).`;
+            resultBox.style.display = 'block';
+        } else if (tipo === "processos_pagos") {
+            const filtrados = unidadeDados.filter(r => (r.statusDgf || '').toUpperCase().trim() === "PAGO" || (r.obUge && String(r.obUge).trim() !== ""));
+            let soma = filtrados.reduce((acc, r) => acc + (desformatarMoeda(r.valorAprov) || desformatarMoeda(r.valorAp)), 0);
+            resultTitle.innerText = "Processos Pagos:";
+            resultDesc.innerText = `${formatarMoedaBR(soma)} (${filtrados.length} processos)`;
+            resultBox.style.display = 'block';
+        } else if (tipo === "atestados_a_pagar") {
+            let somaAprov = unidadeDados.reduce((acc, r) => acc + (desformatarMoeda(r.valorAprov) || (desformatarMoeda(r.valorAp) - desformatarMoeda(r.valorGl))), 0);
+            let somaPagos = unidadeDados.filter(r => (r.statusDgf || '').toUpperCase().trim() === "PAGO" || (r.obUge && String(r.obUge).trim() !== "")).reduce((acc, r) => acc + (desformatarMoeda(r.valorAprov) || desformatarMoeda(r.valorAp)), 0);
+            let pendente = somaAprov - somaPagos;
+            if (pendente < 0) pendente = 0;
+
+            const filtradosAtestadosPend = unidadeDados.filter(r => {
+                const atestosim = (r.atestoFiscal || '').toUpperCase().trim() === "SIM";
+                const naoPago = (r.statusDgf || '').toUpperCase().trim() !== "PAGO" && (!r.obUge || String(r.obUge).trim() === "");
+                return atestosim && naoPago;
+            });
+
+            resultTitle.innerText = "Atestados / A Pagar:";
+            resultDesc.innerText = `${filtradosAtestadosPend.length} proc. atestados - Total a Pagar: ${formatarMoedaBR(pendente)}`;
+            resultBox.style.display = 'block';
+        }
+    }
+
+    function abrirModalDuplicarLinha() {
+        if (usuarioLogado === "coopanest" || usuarioLogado === "visão executiva") {
+            alert("Acesso restrito.");
+            return;
+        }
+
+        let targetHospital = (usuarioLogado === "secretaria de saúde" || usuarioLogado === "coopanest" || usuarioLogado === "visão executiva" || usuarioLogado === "auditoria") ? visualizandoUnidadeSecretaria : usuarioLogado;
+        let dadosFiltrados = planilhaDados;
+
+        if (targetHospital && targetHospital !== "") {
+            let nomeFiltroHospital = credentials[targetHospital] ? credentials[targetHospital].label.toUpperCase() : targetHospital.toUpperCase();
+            dadosFiltrados = dadosFiltrados.filter(r => {
+                let u = (r.unidade || "").toUpperCase().trim();
+                if (targetHospital === "hosp. getulio vargas" || nomeFiltroHospital.includes("GETÚLIO") || nomeFiltroHospital.includes("GETULIO")) {
+                    return u === "HGV" || u.includes("GETÚLIO") || u.includes("GETULIO");
+                }
+                return u.includes(nomeFiltroHospital) || nomeFiltroHospital.includes(u);
+            });
+        }
+
+        const divLista = document.getElementById('lista-linhas-para-duplicar');
+        divLista.innerHTML = '';
+
+        if (!dadosFiltrados || dadosFiltrados.length === 0) {
+            divLista.innerHTML = '<p style="font-size:12px; color:var(--text-sub); text-align:center;">Nenhum registro encontrado para duplicar nesta unidade.</p>';
+        } else {
+            dadosFiltrados.forEach((row, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-duplicar-item';
+                btn.innerHTML = `<strong>Linha ${idx + 1}:</strong> ${row.servico || 'Sem Serviço'} - <em>${row.tipo || 'ORDINÁRIO'}</em>`;
+                btn.onclick = function() { duplicarLinhaSelecionada(row.id); };
+                divLista.appendChild(btn);
+            });
+        }
+
+        document.getElementById('modal-duplicar-linha').style.display = 'flex';
+    }
+
+    function fecharModalDuplicarLinha() {
+        document.getElementById('modal-duplicar-linha').style.display = 'none';
+    }
+
+    function expandirNomeMesCompetencia(str) {
+        if (!str) return "";
+        let comp = str.toString().trim().toUpperCase();
+
+        const mapaMeses = {
+            "JAN": "JANEIRO",
+            "FEV": "FEVEREIRO",
+            "MAR": "MARÇO",
+            "MARCO": "MARÇO",
+            "ABR": "ABRIL",
+            "MAI": "MAIO",
+            "JUN": "JUNHO",
+            "JUL": "JULHO",
+            "AGO": "AGOSTO",
+            "SET": "SETEMBRO",
+            "OUT": "OUTUBRO",
+            "NOV": "NOVEMBRO",
+            "DEZ": "DEZEMBRO"
+        };
+
+        for (let key in mapaMeses) {
+            if (comp.startsWith(key)) {
+                return mapaMeses[key];
+            }
+        }
+
+        return comp;
+    }
+
+    function duplicarLinhaSelecionada(idLinha) {
+        fecharModalDuplicarLinha();
+        const linhaBase = planilhaDados.find(r => String(r.id) === String(idLinha));
+        if (!linhaBase) return;
+
+        let compAlvo = expandirNomeMesCompetencia(competenciaSelecionada || linhaBase.competencia || "");
+
+        const novoRegistro = {
+            servico: linhaBase.servico || "SERVIÇO",
+            unidade: linhaBase.unidade || "UNIDADE",
+            competencia: compAlvo,
+            tipo: linhaBase.tipo || "ORDINÁRIO",
+            formaPagamento: "",
+            monitoramento: "",
+            sei: "",
+            seiStatus: "",
+            valorAp: "R$ 0,00",
+            valorGl: "R$ 0,00",
+            valorAprov: "R$ 0,00",
+            dataPublicacao: "",
+            dataEnvio: "",
+            dataRetorno: "",
+            recibo: "",
+            atestoFiscal: "NÃO",
+            orcamentoUge: "",
+            pdUge: "",
+            obUge: "",
+            statusDgf: "AGUARDANDO Nº DO SEI",
+            valorContrato: linhaBase.valorContrato ? formatarMoedaBR(linhaBase.valorContrato) : "R$ 0,00",
+            saldoContrato: linhaBase.saldoContrato ? formatarMoedaBR(linhaBase.saldoContrato) : "R$ 0,00"
+        };
+
+        showSpinner();
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run.withSuccessHandler(function(res) {
+                hideSpinner();
+                registrarLog("-", `Linha duplicada a partir do serviço: ${novoRegistro.servico}`);
+                alert("Nova linha duplicada com sucesso!");
+                carregarDadosDaPlanilha(competenciaSelecionada);
+            }).withFailureHandler(function(err) {
+                hideSpinner();
+                alert("Erro ao duplicar linha na planilha: " + (err.message || err));
+            }).processarDadosFormulario(novoRegistro, competenciaSelecionada);
+        } else {
+            hideSpinner();
+            novoRegistro.id = Date.now();
+            planilhaDados.push(novoRegistro);
+            registrarLog(novoRegistro.id, `Linha duplicada localmente: ${novoRegistro.servico}`);
+            alert("Nova linha duplicada localmente!");
+            renderizarTabela(planilhaDados);
+            povoarFiltrosDashboard();
+            renderDashboardUnidade();
+        }
+    }
+</script>
+</body>
+</html>
