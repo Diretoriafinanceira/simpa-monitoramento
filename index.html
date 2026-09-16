@@ -1002,7 +1002,9 @@
         const nw = document.getElementById('pwd-new').value;
         const cf = document.getElementById('pwd-confirm').value;
         if (!cur || !nw || !cf) { alert("Preencha todos os campos."); return; }
-        const senhaAtualCadastrada = (tipoSenhaEmAlteracao === 'login') ? credentials[usuarioLogado].pass : credentials[usuarioLogado].atestoPass;
+        
+        const userObj = credentials[usuarioLogado] || credentials[usuarioLogado.toLowerCase()];
+        const senhaAtualCadastrada = (tipoSenhaEmAlteracao === 'login') ? userObj?.pass : userObj?.atestoPass;
         
         if (senhaAtualCadastrada !== "" && cur !== senhaAtualCadastrada) { 
             alert("SENHA INVALIDA"); 
@@ -1010,8 +1012,10 @@
         }
         if (nw !== cf) { alert("A nova senha e a confirmação não conferem."); return; }
 
-        if (tipoSenhaEmAlteracao === 'login') credentials[usuarioLogado].pass = nw;
-        else credentials[usuarioLogado].atestoPass = nw;
+        if (userObj) {
+            if (tipoSenhaEmAlteracao === 'login') userObj.pass = nw;
+            else userObj.atestoPass = nw;
+        }
 
         showSpinner();
         const payload = {
@@ -1028,6 +1032,12 @@
         .then(res => res.json())
         .then(res => {
             hideSpinner();
+            
+            if (credentials[usuarioLogado]) {
+                if (tipoSenhaEmAlteracao === 'login') credentials[usuarioLogado].pass = nw;
+                else credentials[usuarioLogado].atestoPass = nw;
+            }
+            
             alert("Senha alterada e sincronizada para todos os dispositivos!");
             registrarLog("-", `Alteração de ${tipoSenhaEmAlteracao === 'login' ? 'Senha de Login' : 'Senha de Atesto'}`);
             cancelarAlteracaoSenha();
@@ -1447,7 +1457,11 @@
 
     function confirmarDownloadPdfSEI() {
         const senhaDigitada = document.getElementById('sei-download-senha').value;
-        const senhaAtestoCorreta = credentials[usuarioLogado]?.atestoPass || "";
+        
+        const userKey = usuarioLogado.toLowerCase().trim();
+        const userObj = credentials[userKey] || credentials[usuarioLogado];
+        const senhaAtestoCorreta = userObj?.atestoPass || "";
+        
         if (senhaAtestoCorreta !== "" && senhaDigitada !== senhaAtestoCorreta) { alert("SENHA INVALIDA"); return; }
         fecharModalDownloadSEI();
         if (linhaSelecionadaParaPdfSEI) gerarPDFDespachoSEI(linhaSelecionadaParaPdfSEI);
@@ -1851,7 +1865,10 @@
     function confirmarAssinaturaAtesto() {
         const pass = document.getElementById('atesto-senha').value;
         const usuarioAssinante = document.getElementById('atesto-usuario').value;
-        const senhaAtestoCorreta = credentials[usuarioLogado]?.atestoPass || "";
+        
+        const userKey = usuarioLogado.toLowerCase().trim();
+        const userObj = credentials[userKey] || credentials[usuarioLogado];
+        const senhaAtestoCorreta = userObj?.atestoPass || "";
 
         if(pass === senhaAtestoCorreta || senhaAtestoCorreta === "") {
             assinanteAtual = usuarioAssinante;
