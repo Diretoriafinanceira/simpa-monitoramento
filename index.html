@@ -606,6 +606,8 @@
 </div>
 
 <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbwdkH03kEMmy-Sk2FFdBj9WMRcs6RMf9DUaO-cFqUHI_r2K-EemMNSq6sCQBRWzIwCB/exec";
+
     let usuarioLogado = "";
     let exercicioSelecionado = "2026";
     let competenciaSelecionada = "";
@@ -705,8 +707,9 @@
     };
 
     function carregarCredenciaisDaPlanilha() {
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-            google.script.run.withSuccessHandler(function(credMap) {
+        fetch(`${API_URL}?acao=getCredenciais`)
+            .then(res => res.json())
+            .then(credMap => {
                 if (credMap && typeof credMap === 'object') {
                     Object.keys(credMap).forEach(u => {
                         let key = u.toLowerCase().trim();
@@ -723,8 +726,8 @@
                         }
                     });
                 }
-            }).getCredenciaisPlanilha();
-        }
+            })
+            .catch(err => console.error("Erro ao carregar credenciais:", err));
     }
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -804,10 +807,11 @@
             credentials[userKey].pass = "123456";
             credentials[userKey].atestoPass = "123456";
 
-            if (typeof google !== 'undefined' && google.script && google.script.run) {
-                google.script.run.salvarSenhaPlanilha(userKey, "123456", "login");
-                google.script.run.salvarSenhaPlanilha(userKey, "123456", "atesto");
-            }
+            const p1 = { acao: "salvarSenhaPlanilha", usuario: userKey, novaSenha: "123456", tipo: "login" };
+            const p2 = { acao: "salvarSenhaPlanilha", usuario: userKey, novaSenha: "123456", tipo: "atesto" };
+
+            fetch(API_URL, { method: "POST", body: JSON.stringify(p1) });
+            fetch(API_URL, { method: "POST", body: JSON.stringify(p2) });
 
             alert(`As senhas de ${credentials[userKey].label} foram resetadas para '123456'!`);
             abrirModalGerenciarSenhas();
@@ -926,30 +930,24 @@
             carregarDadosDaPlanilha(consultaPlanilha);
         };
 
-        if (typeof google === 'undefined' || !google.script || !google.script.run) {
-            setTimeout(() => {
+        fetch(`${API_URL}?acao=getCompetencias`)
+            .then(res => res.json())
+            .then(abas => {
+                hideSpinner();
+                let abasExistentes = abas || [];
+                let abasFiltradas = filtrarAbasPorExercicio(abasExistentes);
+                
+                if (abasFiltradas.length === 0 && exerciciosECompetencias[exercicioSelecionado]) {
+                    abasFiltradas = exerciciosECompetencias[exercicioSelecionado];
+                }
+                
+                atualizarSelectCompetencia(abasFiltradas);
+            })
+            .catch(err => {
                 hideSpinner();
                 let meses = exerciciosECompetencias[exercicioSelecionado] || [];
                 atualizarSelectCompetencia(meses);
-            }, 300);
-            return;
-        }
-
-        google.script.run.withSuccessHandler(function(abas) {
-            hideSpinner();
-            let abasExistentes = abas || [];
-            let abasFiltradas = filtrarAbasPorExercicio(abasExistentes);
-            
-            if (abasFiltradas.length === 0 && exerciciosECompetencias[exercicioSelecionado]) {
-                abasFiltradas = exerciciosECompetencias[exercicioSelecionado];
-            }
-            
-            atualizarSelectCompetencia(abasFiltradas);
-        }).withFailureHandler(function(err) {
-            hideSpinner();
-            let meses = exerciciosECompetencias[exercicioSelecionado] || [];
-            atualizarSelectCompetencia(meses);
-        }).getCompetencias();
+            });
     }
 
     function alterarExercicio(novoExercicio) {
@@ -1016,53 +1014,45 @@
         else credentials[usuarioLogado].atestoPass = nw;
 
         showSpinner();
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-            google.script.run.withSuccessHandler(function() {
-                hideSpinner();
-                alert("Senha alterada e sincronizada para todos os dispositivos!");
-                registrarLog("-", `Alteração de ${tipoSenhaEmAlteracao === 'login' ? 'Senha de Login' : 'Senha de Atesto'}`);
-                cancelarAlteracaoSenha();
-            }).withFailureHandler(function(err) {
-                hideSpinner();
-                alert("Erro ao salvar senha no servidor: " + (err.message || err));
-            }).salvarSenhaPlanilha(usuarioLogado, nw, tipoSenhaEmAlteracao);
-        } else {
+        const payload = {
+            acao: "salvarSenhaPlanilha",
+            usuario: usuarioLogado,
+            novaSenha: nw,
+            tipo: tipoSenhaEmAlteracao
+        };
+
+        fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(res => {
             hideSpinner();
-            alert("Senha alterada localmente!");
+            alert("Senha alterada e sincronizada para todos os dispositivos!");
             registrarLog("-", `Alteração de ${tipoSenhaEmAlteracao === 'login' ? 'Senha de Login' : 'Senha de Atesto'}`);
             cancelarAlteracaoSenha();
-        }
+        })
+        .catch(err => {
+            hideSpinner();
+            alert("Erro ao salvar senha no servidor.");
+        });
     }
 
     function carregarDadosDaPlanilha(comp) {
         showSpinner();
-        if (typeof google === 'undefined' || !google.script || !google.script.run) {
-            setTimeout(() => {
+        fetch(`${API_URL}?acao=dadosCompetencia&competencia=${encodeURIComponent(comp)}`)
+            .then(res => res.json())
+            .then(dados => {
                 hideSpinner();
-                planilhaDados = [
-                    { id: 1, servico: "PRODUÇÃO ELETIVA", unidade: "HGV", competencia: "NOV.2025", tipo: "ORDINÁRIO", formaPagamento: "", monitoramento: "", sei: "2300000269.000100/2025-19", seiStatus: "", valorAp: 321077.08, valorGl: 0, valorAprov: 321077.08, dataPublicacao: "", dataEnvio: "", dataRetorno: "", recibo: "", atestoFiscal: "NÃO", orcamentoUge: "", pdUge: "", obUge: "", statusDgf: "EM PROCESSO DE AUDITORIA", valorContrato: 0, saldoContrato: 0 },
-                    { id: 2, servico: "PRODUÇÃO ELETIVA", unidade: "HGV", competencia: "DEZ.2025", tipo: "RECURSO DE GLOSA", formaPagamento: "", monitoramento: "", sei: "2300000269.000319/2025-18", seiStatus: "", valorAp: 29998.54, valorGl: 0, valorAprov: 29998.54, dataPublicacao: "", dataEnvio: "", dataRetorno: "", recibo: "", atestoFiscal: "NÃO", orcamentoUge: "", pdUge: "", obUge: "", statusDgf: "EM PROCESSO DE AUDITORIA", valorContrato: 0, saldoContrato: 0 },
-                    { id: 3, servico: "PRODUÇÃO ELETIVA", unidade: "HGV", competencia: comp, tipo: "CONSENSO", formaPagamento: "", monitoramento: "", sei: "2300000269.000101/2026-55", seiStatus: "", valorAp: 3024.16, valorGl: 0, valorAprov: 3024.16, dataPublicacao: "", dataEnvio: "", dataRetorno: "", recibo: "", atestoFiscal: "NÃO", orcamentoUge: "", pdUge: "", obUge: "", statusDgf: "EM PROCESSO DE AUDITORIA", valorContrato: 0, saldoContrato: 0 },
-                    { id: 4, servico: "PISO E COMPLEMENTO", unidade: "HGV", competencia: comp, tipo: "ORDINÁRIO", formaPagamento: "", monitoramento: "", sei: "2300000269.000099/2026-14", seiStatus: "", valorAp: 449234.13, valorGl: 0, valorAprov: 449234.13, dataPublicacao: "", dataEnvio: "", dataRetorno: "", recibo: "", atestoFiscal: "NÃO", orcamentoUge: "", pdUge: "", obUge: "", statusDgf: "EM PROCESSO DE AUDITORIA", valorContrato: 0, saldoContrato: 0 },
-                    { id: 5, servico: "PISO E COMPLEMENTO", unidade: "HGV", competencia: comp, tipo: "RECURSO DE GLOSA", formaPagamento: "", monitoramento: "", sei: "2300000269000339/2026-81", seiStatus: "", valorAp: 10491.65, valorGl: 0, valorAprov: 10491.65, dataPublicacao: "", dataEnvio: "", dataRetorno: "", recibo: "", atestoFiscal: "NÃO", orcamentoUge: "", pdUge: "", obUge: "", statusDgf: "EM PROCESSO DE AUDITORIA", valorContrato: 0, saldoContrato: 0 },
-                    { id: 6, servico: "PISO E COMPLEMENTO", unidade: "HGV", competencia: comp, tipo: "CONSENSO", formaPagamento: "", monitoramento: "", sei: "2300000269.000579/2026-85", seiStatus: "", valorAp: 0, valorGl: 0, valorAprov: 0, dataPublicacao: "", dataEnvio: "", dataRetorno: "", recibo: "", atestoFiscal: "NÃO", orcamentoUge: "", pdUge: "", obUge: "", statusDgf: "EM PROCESSO DE AUDITORIA", valorContrato: 0, saldoContrato: 0 }
-                ];
+                planilhaDados = dados || [];
                 renderizarTabela(planilhaDados);
                 povoarFiltrosDashboard();
                 renderDashboardUnidade();
-            }, 300);
-            return;
-        }
-        google.script.run.withSuccessHandler(function(dados) {
-            hideSpinner();
-            planilhaDados = dados || [];
-            renderizarTabela(planilhaDados);
-            povoarFiltrosDashboard();
-            renderDashboardUnidade();
-        }).withFailureHandler(function(err) { 
-            hideSpinner(); 
-            alert("Erro ao carregar dados: " + (err.message || err));
-        }).dadosDaCompetencia(comp);
+            })
+            .catch(err => {
+                hideSpinner();
+                alert("Erro ao carregar dados do servidor.");
+            });
     }
 
     function renderizarTabela(dados) {
@@ -1497,30 +1487,32 @@
             seiStatus: document.getElementById('field-sei-status').value
         };
 
+        const payload = {
+            acao: "salvarDadosLinha",
+            competencia: competenciaSelecionada,
+            id: id,
+            dados: dados
+        };
+
         showSpinner();
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-            google.script.run.withSuccessHandler(function() {
-                hideSpinner();
-                let descricaoAcao = "Atualização de dados";
-                if (dados.atestoFiscal === "SIM" && assinanteAtual) descricaoAcao += ` (Atestado por: ${assinanteAtual})`;
-                registrarLog(id, descricaoAcao, assinanteAtual);
-                assinanteAtual = "";
-                alert("Dados salvos com sucesso!");
-                goToHome();
-            }).withFailureHandler(function(err) {
-                hideSpinner();
-                alert("Erro: " + (err.message || err));
-            }).salvarDadosLinha(competenciaSelecionada, id, dados);
-        } else {
+        fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(res => {
             hideSpinner();
-            let idx = planilhaDados.findIndex(r => String(r.id) === String(id));
-            if(idx !== -1) {
-                planilhaDados[idx] = { ...planilhaDados[idx], ...dados };
-            }
-            registrarLog(id, "Atualização de dados");
-            alert("Dados salvos localmente!");
+            let descricaoAcao = "Atualização de dados";
+            if (dados.atestoFiscal === "SIM" && assinanteAtual) descricaoAcao += ` (Atestado por: ${assinanteAtual})`;
+            registrarLog(id, descricaoAcao, assinanteAtual);
+            assinanteAtual = "";
+            alert("Dados salvos com sucesso!");
             goToHome();
-        }
+        })
+        .catch(err => {
+            hideSpinner();
+            alert("Erro ao salvar dados.");
+        });
     }
 
     function editData() {
@@ -1563,27 +1555,29 @@
                 saldoContrato: 0
             };
 
+            const payload = {
+                acao: "salvarDadosLinha",
+                competencia: competenciaSelecionada,
+                id: id,
+                dados: dadosPreservados
+            };
+
             showSpinner();
-            if (typeof google !== 'undefined' && google.script && google.script.run) {
-                google.script.run.withSuccessHandler(function() {
-                    hideSpinner();
-                    registrarLog(id, "Limpeza de dados mantendo chaves do serviço");
-                    alert("Lançamento limpo com sucesso!");
-                    goToHome();
-                }).withFailureHandler(function(err) { 
-                    hideSpinner(); 
-                    alert("Erro ao limpar dados: " + (err.message || err));
-                }).salvarDadosLinha(competenciaSelecionada, id, dadosPreservados);
-            } else {
+            fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(res => {
                 hideSpinner();
-                let idx = planilhaDados.findIndex(r => String(r.id) === String(id));
-                if(idx !== -1) {
-                    planilhaDados[idx] = dadosPreservados;
-                }
                 registrarLog(id, "Limpeza de dados mantendo chaves do serviço");
-                alert("Lançamento limpo localmente!");
+                alert("Lançamento limpo com sucesso!");
                 goToHome();
-            }
+            })
+            .catch(err => {
+                hideSpinner();
+                alert("Erro ao limpar dados.");
+            });
         }
     }
 
@@ -1876,15 +1870,19 @@
     }
 
     function registrarLog(linhaId, acao, nomeAssinante = "") {
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-            google.script.run.registrarLogServidor(
-                usuarioLogado.toUpperCase(),
-                competenciaSelecionada || "-",
-                linhaId || "-",
-                acao,
-                nomeAssinante
-            );
-        }
+        const payload = {
+            acao: "registrarLogServidor",
+            usuario: usuarioLogado.toUpperCase(),
+            competencia: competenciaSelecionada || "-",
+            id: linhaId || "-",
+            acaoLog: acao,
+            assinanteAtesto: nomeAssinante
+        };
+
+        fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify(payload)
+        }).catch(err => console.error("Erro ao registrar log:", err));
     }
 
     function abrirModalLogs() {
@@ -1896,19 +1894,17 @@
         }
         
         showSpinner();
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-            google.script.run.withSuccessHandler(function(logsServer) {
+        fetch(`${API_URL}?acao=getLogs`)
+            .then(res => res.json())
+            .then(logsServer => {
                 hideSpinner();
                 historicoLogsLocal = logsServer || [];
                 renderizarLogsModal();
-            }).withFailureHandler(function() {
+            })
+            .catch(err => {
                 hideSpinner();
                 renderizarLogsModal();
-            }).obterLogs();
-        } else {
-            hideSpinner();
-            renderizarLogsModal();
-        }
+            });
     }
 
     function fecharModalLogs() { document.getElementById('modal-logs').style.display = 'none'; }
@@ -1951,16 +1947,19 @@
         if (usuarioLogado !== "secretaria de saúde") return;
         if (confirm("Deseja limpar todo o histórico armazenado na planilha?")) {
             showSpinner();
-            if (typeof google !== 'undefined' && google.script && google.script.run) {
-                google.script.run.withSuccessHandler(function() {
-                    hideSpinner();
-                    historicoLogsLocal = [];
-                    renderizarLogsModal();
-                    alert("Histórico da planilha limpo!");
-                }).withFailureHandler(function() { hideSpinner(); }).limparLogs();
-            } else {
+            const payload = { acao: "limparLogs" };
+            fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(res => {
                 hideSpinner();
-            }
+                historicoLogsLocal = [];
+                renderizarLogsModal();
+                alert("Histórico da planilha limpo!");
+            })
+            .catch(err => hideSpinner());
         }
     }
 
@@ -1971,20 +1970,19 @@
         document.getElementById('lakehouse-resultado-texto').innerText = "Selecione uma pergunta acima para iniciar a análise.";
         
         showSpinner();
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-            google.script.run.withSuccessHandler(function(dados) {
+        fetch(`${API_URL}?acao=dadosCompetencia&competencia=TOTAL`)
+            .then(res => res.json())
+            .then(dados => {
                 hideSpinner();
                 planilhaDados = dados || [];
                 if (select.value) {
                     executarConsultaLakehouse(select.value);
                 }
-            }).withFailureHandler(function(err) {
+            })
+            .catch(err => {
                 hideSpinner();
                 document.getElementById('lakehouse-resultado-texto').innerText = "Erro ao carregar dados do servidor.";
-            }).dadosDaCompetencia('TOTAL');
-        } else {
-            hideSpinner();
-        }
+            });
     }
 
     function fecharModalLakehouse() { document.getElementById('modal-lakehouse').style.display = 'none'; }
@@ -2208,9 +2206,9 @@
             monitoramento: "",
             sei: "",
             seiStatus: "",
-            valorAp: "R$ 0,00",
-            valorGl: "R$ 0,00",
-            valorAprov: "R$ 0,00",
+            valorAp: 0,
+            valorGl: 0,
+            valorAprov: 0,
             dataPublicacao: "",
             dataEnvio: "",
             dataRetorno: "",
@@ -2220,31 +2218,32 @@
             pdUge: "",
             obUge: "",
             statusDgf: "AGUARDANDO Nº DO SEI",
-            valorContrato: linhaBase.valorContrato ? formatarMoedaBR(linhaBase.valorContrato) : "R$ 0,00",
-            saldoContrato: linhaBase.saldoContrato ? formatarMoedaBR(linhaBase.saldoContrato) : "R$ 0,00"
+            valorContrato: linhaBase.valorContrato || 0,
+            saldoContrato: linhaBase.saldoContrato || 0
+        };
+
+        const payload = {
+            acao: "processarDadosFormulario",
+            dados: novoRegistro,
+            competencia: competenciaSelecionada
         };
 
         showSpinner();
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-            google.script.run.withSuccessHandler(function(res) {
-                hideSpinner();
-                registrarLog("-", `Linha duplicada a partir do serviço: ${novoRegistro.servico}`);
-                alert("Nova linha duplicada com sucesso!");
-                carregarDadosDaPlanilha(competenciaSelecionada);
-            }).withFailureHandler(function(err) {
-                hideSpinner();
-                alert("Erro ao duplicar linha na planilha: " + (err.message || err));
-            }).processarDadosFormulario(novoRegistro, competenciaSelecionada);
-        } else {
+        fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(res => {
             hideSpinner();
-            novoRegistro.id = Date.now();
-            planilhaDados.push(novoRegistro);
-            registrarLog(novoRegistro.id, `Linha duplicada localmente: ${novoRegistro.servico}`);
-            alert("Nova linha duplicada localmente!");
-            renderizarTabela(planilhaDados);
-            povoarFiltrosDashboard();
-            renderDashboardUnidade();
-        }
+            registrarLog("-", `Linha duplicada a partir do serviço: ${novoRegistro.servico}`);
+            alert("Nova linha duplicada com sucesso!");
+            carregarDadosDaPlanilha(competenciaSelecionada);
+        })
+        .catch(err => {
+            hideSpinner();
+            alert("Erro ao duplicar linha na planilha.");
+        });
     }
 </script>
 </body>
