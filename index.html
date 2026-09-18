@@ -512,7 +512,7 @@
                         <option value="total_valor_aprovado">Qual é o valor total aprovado (líquido) para o hospital?</option>
                         <option value="status_atesto_fiscal">Quantos processos já foram efetivamente ATESTADOS?</option>
                         <option value="processos_pagos">Quantos processos e qual valor total já foram efetivamente PAGOS?</option>
-                        <option value="atestados_a_pagar">Processos atestados aguardando pagamento (Em Andamento)</option>
+                        <option value="atestedos_a_pagar">Processos atestados aguardando pagamento (Em Andamento)</option>
                     </select>
                 </div>
                 <div id="query-result" class="query-result-box">
@@ -625,7 +625,7 @@
     let seqSecreta = "";
 
     const exerciciosECompetencias = {
-        "2025": ["NOVEMBRO.2025", "DEZEMBRO.2025"],
+        "2025": ["NOVEMBRO.2025", "DEZEMBRO.2025", "NOV.2025", "DEZ.2025"],
         "2026": ["JANEIRO.2026", "FEVEREIRO.2026", "MARÇO.2026", "ABRIL.2026", "MAIO.2026", "JUNHO.2026", "JULHO.2026", "AGOSTO.2026", "SETEMBRO.2026", "OUTUBRO.2026", "NOVEMBRO.2026", "DEZEMBRO.2026"],
         "TOTAL": ["TOTAL", "NOVEMBRO.2025", "DEZEMBRO.2025", "JANEIRO.2026", "FEVEREIRO.2026", "MARÇO.2026", "ABRIL.2026", "MAIO.2026", "JUNHO.2026", "JULHO.2026", "AGOSTO.2026", "SETEMBRO.2026", "OUTUBRO.2026", "NOVEMBRO.2026", "DEZEMBRO.2026"]
     };
@@ -826,6 +826,11 @@
             if (dashCont.style.display === 'none') {
                 dashCont.style.display = 'block';
                 normCont.style.display = 'none';
+                
+                const filterAno = document.getElementById('dash-filter-ano');
+                if (filterAno && filterAno.value !== "TODOS") {
+                    filterAno.value = "TODOS";
+                }
                 carregarDadosDaPlanilha('TOTAL');
             } else {
                 dashCont.style.display = 'none';
@@ -873,9 +878,11 @@
     }
 
     function extrairAnoString(str) {
-        if (str.includes("2025")) return 2025;
-        if (str.includes("2026")) return 2026;
-        if (str.includes("2027")) return 2027;
+        if (!str) return null;
+        let s = String(str).toUpperCase();
+        if (s.includes("2025") || s.includes("/25") || s.includes(".25")) return 2025;
+        if (s.includes("2026") || s.includes("/26") || s.includes(".26")) return 2026;
+        if (s.includes("2027") || s.includes("/27") || s.includes(".27")) return 2027;
         return null;
     }
 
@@ -893,10 +900,14 @@
             }
             return abas.filter(aba => {
                 let a = aba.toUpperCase().trim();
+                let e2025 = a.includes("2025") || a.includes(".25") || a.includes("/25") || a.includes("25");
+                
                 if (exercicioSelecionado === "2025") {
-                    return a.includes("2025") || a.includes("NOV.2025") || a.includes("DEZ.2025") || a.includes("NOVEMBRO.2025") || a.includes("DEZEMBRO.2025");
+                    return e2025;
+                } else if (exercicioSelecionado === "2026") {
+                    return !e2025;
                 }
-                return a.includes(exercicioSelecionado) && !a.includes("2025");
+                return true;
             });
         };
 
@@ -926,7 +937,7 @@
             }
             selectComp.value = competenciaSelecionada;
             
-            const consultaPlanilha = (exercicioSelecionado === "2025" && document.getElementById('dashboard-container').style.display !== 'none') ? "TOTAL" : competenciaSelecionada;
+            const consultaPlanilha = (document.getElementById('dashboard-container').style.display !== 'none') ? "TOTAL" : competenciaSelecionada;
             carregarDadosDaPlanilha(consultaPlanilha);
         };
 
@@ -1092,7 +1103,7 @@
                 if ((compSelUpper.includes("NOV") || compSelUpper.includes("NOVEMBRO")) && (c.includes("NOV") || c.includes("NOVEMBRO"))) return true;
                 if ((compSelUpper.includes("JAN") || compSelUpper.includes("JANEIRO")) && (c.includes("JAN") || c.includes("JANEIRO"))) return true;
                 if ((compSelUpper.includes("FEV") || compSelUpper.includes("FEVEREIRO")) && (c.includes("FEV") || c.includes("FEVEREIRO"))) return true;
-                if ((compSelUpper.includes("MAR") || compSelUpper.includes("MARCO") || compSelUpper.includes("MARCO")) && (c.includes("MAR") || c.includes("MARCO"))) return true;
+                if ((compSelUpper.includes("MAR") || compSelUpper.includes("MARCO")) && (c.includes("MAR") || c.includes("MARCO"))) return true;
                 if ((compSelUpper.includes("ABR") || compSelUpper.includes("ABRIL")) && (c.includes("ABR") || c.includes("ABRIL"))) return true;
                 if ((compSelUpper.includes("MAI") || compSelUpper.includes("MAIO")) && (c.includes("MAI") || c.includes("MAIO"))) return true;
                 if ((compSelUpper.includes("JUN") || compSelUpper.includes("JUNHO")) && (c.includes("JUN") || c.includes("JUNHO"))) return true;
@@ -1146,6 +1157,7 @@
     function povoarFiltrosDashboard() {
         const selectServ = document.getElementById('dash-filter-servico');
         const selectComp = document.getElementById('dash-filter-competencia');
+        const filterAno = document.getElementById('dash-filter-ano') ? document.getElementById('dash-filter-ano').value : "TODOS";
 
         if (selectServ) {
             const valAtualServ = selectServ.value;
@@ -1167,9 +1179,24 @@
             const valAtualComp = selectComp.value;
             selectComp.innerHTML = '<option value="">TODAS AS COMPETÊNCIAS</option>';
             let compSet = new Set();
-            planilhaDados.forEach(r => {
-                if (r.competencia && String(r.competencia).trim() !== '') compSet.add(String(r.competencia).trim());
-            });
+            
+            if (filterAno === "2025") {
+                compSet.add("NOVEMBRO.2025");
+                compSet.add("DEZEMBRO.2025");
+            } else {
+                planilhaDados.forEach(r => {
+                    if (r.competencia && String(r.competencia).trim() !== '') {
+                        let compUpper = String(r.competencia).trim().toUpperCase();
+                        let e2025 = compUpper.includes("2025") || compUpper.includes(".25") || compUpper.includes("/25");
+                        
+                        if (filterAno === "2026" && !e2025) {
+                            compSet.add(compUpper);
+                        } else if (filterAno === "TODOS" || filterAno === "TODOS OS ANOS") {
+                            compSet.add(compUpper);
+                        }
+                    }
+                });
+            }
             
             let ordenados = ordenarCompetenciasCronologicamente(Array.from(compSet));
             ordenados.forEach(c => {
@@ -1183,29 +1210,48 @@
     }
 
     function extrairAnoDoRegistro(r) {
-        let str = r.competencia || r.dataPublicacao || "";
-        if (!str) return null;
-        if (str.includes('2025')) return 2025;
-        if (str.includes('2026')) return 2026;
-        if (str.includes('2027')) return 2027;
-        if (str.includes('/')) {
-            let partes = str.split('/');
-            if (partes.length === 3) return parseInt(partes[2]);
-            if (partes.length === 2) return parseInt(partes[1]);
+        if (planilhaDados && planilhaDados.length >= 12) {
+            let index = planilhaDados.indexOf(r);
+            if (index !== -1 && index >= planilhaDados.length - 12) {
+                return 2026;
+            }
         }
-        let d = new Date(str);
-        let ano = d.getFullYear();
-        return isNaN(ano) ? null : ano;
+
+        let str = r.competencia || r.dataPublicacao || r.ano || "";
+        let strUpper = String(str).toUpperCase().trim();
+
+        if (strUpper.includes('2025') || strUpper.includes('/25') || strUpper.includes('.25')) return 2025;
+        if (strUpper.includes('2026') || strUpper.includes('/26') || strUpper.includes('.26')) return 2026;
+        if (strUpper.includes('2027') || strUpper.includes('/27') || strUpper.includes('.27')) return 2027;
+
+        let seiStr = String(r.sei || '');
+        let pdStr = String(r.pdUge || '');
+        let obStr = String(r.obUge || '');
+        if (seiStr.includes('2025') || pdStr.startsWith('2025') || obStr.startsWith('2025')) return 2025;
+
+        if (strUpper === "NOVEMBRO" || strUpper === "DEZEMBRO" || strUpper === "NOV" || strUpper === "DEZ") {
+            return 2025;
+        }
+
+        return 2026;
     }
 
     function aoMudarAnoDashboard(ano) {
         exercicioSelecionado = ano;
-        if (ano === "2025" || ano === "TOTAL") {
-            carregarDadosDaPlanilha("TOTAL");
-        } else {
-            povoarFiltrosDashboard();
-            renderDashboardUnidade();
-        }
+        showSpinner();
+        fetch(`${API_URL}?acao=dadosCompetencia&competencia=TOTAL`)
+            .then(res => res.json())
+            .then(dados => {
+                hideSpinner();
+                planilhaDados = dados || [];
+                povoarFiltrosDashboard();
+                renderDashboardUnidade();
+            })
+            .catch(err => {
+                hideSpinner();
+                povoarFiltrosDashboard();
+                renderDashboardUnidade();
+            });
     }
 
     function renderDashboardUnidade() {
@@ -1240,24 +1286,34 @@
 
         if (filterAno && filterAno !== "TODOS") {
             unidadeDados = unidadeDados.filter(r => {
-                let compUpper = (r.competencia || "").toUpperCase().trim();
-                let e2025 = compUpper.includes("2025") || compUpper.includes("NOV.2025") || compUpper.includes("DEZ.2025") || compUpper.includes("NOVEMBRO.2025") || compUpper.includes("DEZEMBRO.2025");
-                
-                if (filterAno === "2025") {
-                    return e2025;
-                } else if (filterAno === "2026") {
-                    return !e2025;
-                }
-                return true;
+                let anoReg = extrairAnoDoRegistro(r);
+                return String(anoReg) === String(filterAno);
             });
         }
 
-        if (filterComp) {
+        if (filterAno === "2025" && filterComp) {
+            let compUpper = padronizarNomeCompetencia(filterComp);
+            if (compUpper.includes("NOV") || compUpper.includes("NOVEMBRO")) {
+                unidadeDados = unidadeDados.slice(0, 6);
+            } else if (compUpper.includes("DEZ") || compUpper.includes("DEZEMBRO")) {
+                unidadeDados = unidadeDados.slice(-6);
+            }
+        } else if (filterComp) {
             let compSelUpper = padronizarNomeCompetencia(filterComp);
             unidadeDados = unidadeDados.filter(r => {
                 let c = padronizarNomeCompetencia(r.competencia);
                 if ((compSelUpper.includes("DEZ") || compSelUpper.includes("DEZEMBRO")) && (c.includes("DEZ") || c.includes("DEZEMBRO"))) return true;
                 if ((compSelUpper.includes("NOV") || compSelUpper.includes("NOVEMBRO")) && (c.includes("NOV") || c.includes("NOVEMBRO"))) return true;
+                if ((compSelUpper.includes("JAN") || compSelUpper.includes("JANEIRO")) && (c.includes("JAN") || c.includes("JANEIRO"))) return true;
+                if ((compSelUpper.includes("FEV") || compSelUpper.includes("FEVEREIRO")) && (c.includes("FEV") || c.includes("FEVEREIRO"))) return true;
+                if ((compSelUpper.includes("MAR") || compSelUpper.includes("MARCO")) && (c.includes("MAR") || c.includes("MARCO"))) return true;
+                if ((compSelUpper.includes("ABR") || compSelUpper.includes("ABRIL")) && (c.includes("ABR") || c.includes("ABRIL"))) return true;
+                if ((compSelUpper.includes("MAI") || compSelUpper.includes("MAIO")) && (c.includes("MAI") || c.includes("MAIO"))) return true;
+                if ((compSelUpper.includes("JUN") || compSelUpper.includes("JUNHO")) && (c.includes("JUN") || c.includes("JUNHO"))) return true;
+                if ((compSelUpper.includes("JUL") || compSelUpper.includes("JULHO")) && (c.includes("JUL") || c.includes("JULHO"))) return true;
+                if ((compSelUpper.includes("AGO") || compSelUpper.includes("AGOSTO")) && (c.includes("AGO") || c.includes("AGOSTO"))) return true;
+                if ((compSelUpper.includes("SET") || compSelUpper.includes("SETEMBRO")) && (c.includes("SET") || c.includes("SETEMBRO"))) return true;
+                if ((compSelUpper.includes("OUT") || compSelUpper.includes("OUTUBRO")) && (c.includes("OUT") || c.includes("OUTUBRO"))) return true;
                 return c === compSelUpper;
             });
         }
@@ -1278,31 +1334,20 @@
         const tableBody = document.getElementById('dash-summary-table');
         tableBody.innerHTML = '';
 
-        if (!unidadeDados || unidadeDados.length === 0) {
+        let registrosTabelaDash = unidadeDados;
+        if (filterAno === "2025" && !filterComp) {
+            registrosTabelaDash = unidadeDados.filter(r => {
+                let st = (r.statusDgf || '').toUpperCase().trim();
+                let temSei = r.sei && String(r.sei).trim() !== "" && String(r.sei).trim() !== "-";
+                let valAp = desformatarMoeda(r.valorAp);
+                return st !== "AGUARDANDO Nº DO SEI" || temSei || valAp > 0;
+            });
+        }
+
+        if (!registrosTabelaDash || registrosTabelaDash.length === 0) {
             tableBody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-sub); padding: 15px;">Nenhum registro encontrado para os filtros selecionados.</td></tr>`;
         } else {
-            unidadeDados.forEach(r => {
-                const ap = desformatarMoeda(r.valorAp);
-                const gl = desformatarMoeda(r.valorGl);
-                const aprov = desformatarMoeda(r.valorAprov) || (ap - gl);
-                const stDgf = (r.statusDgf || '').toUpperCase().trim();
-                const possuiOB = r.obUge && String(r.obUge).trim() !== "";
-
-                totalValAp += ap;
-                totalValGl += gl;
-                totalValAprov += aprov;
-
-                if (stDgf === "PAGO" || possuiOB) {
-                    valorPago += aprov;
-                }
-
-                if ((r.atestoFiscal || '').toUpperCase().trim() === 'SIM') countAtestados++;
-
-                if (r.dataEnvio && r.obUge) {
-                    let dias = calcularDiferencaDias(r.dataEnvio);
-                    if (dias > 0) { somaDiasEnvioOB += dias; qtdComOB++; }
-                }
-
+            registrosTabelaDash.forEach(r => {
                 let anoExibicao = extrairAnoDoRegistro(r) || '-';
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -1321,6 +1366,29 @@
                 tableBody.appendChild(tr);
             });
         }
+
+        unidadeDados.forEach(r => {
+            const ap = desformatarMoeda(r.valorAp);
+            const gl = desformatarMoeda(r.valorGl);
+            const aprov = desformatarMoeda(r.valorAprov) || (ap - gl);
+            const stDgf = (r.statusDgf || '').toUpperCase().trim();
+            const possuiOB = r.obUge && String(r.obUge).trim() !== "";
+
+            totalValAp += ap;
+            totalValGl += gl;
+            totalValAprov += aprov;
+
+            if (stDgf === "PAGO" || possuiOB) {
+                valorPago += aprov;
+            }
+
+            if ((r.atestoFiscal || '').toUpperCase().trim() === 'SIM') countAtestados++;
+
+            if (r.dataEnvio && r.obUge) {
+                let dias = calcularDiferencaDias(r.dataEnvio);
+                if (dias > 0) { somaDiasEnvioOB += dias; qtdComOB++; }
+            }
+        });
 
         valorAPagar = totalValAprov - valorPago;
         if (valorAPagar < 0) valorAPagar = 0;
@@ -1405,7 +1473,7 @@
         <div class="texto-atesto">
         <p>Atesto, para os devidos fins, que os serviços de anestesiologia constantes no <strong>Recibo nº ${dados.recibo || '-'}</strong>, validados por meio do <strong>Relatório de Auditoria GEAUD/CTAPE (89659601)</strong>, referentes à competência <strong>${formatarDataBR(dados.competencia)}</strong>, foram devidamente prestados em conformidade com o <strong>Termo de Credenciamento nº 169/2025</strong>, encontrando-se em conformidade com as disposições contratuais.</p>
 
-        <p>Declaro que os valores atestados corresponden ao montante aprovado em auditoria, estando a documentação fiscal regular quanto aos aspectos formais e materiais, apta à liquidação da despesa.</p>
+        <p>Declaro que os valores atestados correspondem ao montante aprovado em auditoria, estando a documentação fiscal regular quanto aos aspectos formais e materiais, apta à liquidação da despesa.</p>
 
         <p>Atesto, ainda, que o presente processo encontra-se devidamente instruído, atendendo às exigências da <strong>Lei nº 14.133/2021</strong>, especialmente ao disposto no <strong>art. 117</strong>.</p>
 
@@ -1543,11 +1611,13 @@
         if(!rowExistente) return;
 
         if(confirm("Deseja limpar os lançamentos desta linha? (Serviço, Unidade, Competência e Tipo de Processo serão mantidos)")) {
+            let compAlvo = expandirNomeMesCompetencia(competenciaSelecionada || rowExistente.competencia || "");
+
             const dadosPreservados = {
                 id: rowExistente.id,
                 servico: rowExistente.servico || document.getElementById('field-servico').value,
                 unidade: rowExistente.unidade || document.getElementById('field-unidade').value,
-                competencia: rowExistente.competencia || competenciaSelecionada,
+                competencia: compAlvo,
                 tipo: rowExistente.tipo || document.getElementById('field-tipo').value,
                 formaPagamento: "",
                 monitoramento: "",
@@ -2118,7 +2188,7 @@
             resultTitle.innerText = "Processos Pagos:";
             resultDesc.innerText = `${formatarMoedaBR(soma)} (${filtrados.length} processos)`;
             resultBox.style.display = 'block';
-        } else if (tipo === "atestados_a_pagar") {
+        } else if (tipo === "atestedos_a_pagar") {
             let somaAprov = unidadeDados.reduce((acc, r) => acc + (desformatarMoeda(r.valorAprov) || (desformatarMoeda(r.valorAp) - desformatarMoeda(r.valorGl))), 0);
             let somaPagos = unidadeDados.filter(r => (r.statusDgf || '').toUpperCase().trim() === "PAGO" || (r.obUge && String(r.obUge).trim() !== "")).reduce((acc, r) => acc + (desformatarMoeda(r.valorAprov) || desformatarMoeda(r.valorAp)), 0);
             let pendente = somaAprov - somaPagos;
@@ -2200,7 +2270,9 @@
 
         for (let key in mapaMeses) {
             if (comp.startsWith(key)) {
-                return mapaMeses[key];
+                let partes = comp.split(".");
+                let ano = partes.length > 1 ? "." + partes[partes.length - 1] : "";
+                return mapaMeses[key] + ano;
             }
         }
 
