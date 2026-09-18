@@ -813,6 +813,7 @@
             fetch(API_URL, { method: "POST", body: JSON.stringify(p1) });
             fetch(API_URL, { method: "POST", body: JSON.stringify(p2) });
 
+            registrarLog("-", `Resetou as senhas do usuário: ${credentials[userKey].label} para o padrão '123456'`);
             alert(`As senhas de ${credentials[userKey].label} foram resetadas para '123456'!`);
             abrirModalGerenciarSenhas();
         }
@@ -1050,7 +1051,7 @@
             }
             
             alert("Senha alterada e sincronizada para todos os dispositivos!");
-            registrarLog("-", `Alteração de ${tipoSenhaEmAlteracao === 'login' ? 'Senha de Login' : 'Senha de Atesto'}`);
+            registrarLog("-", `Alteração realizada na ${tipoSenhaEmAlteracao === 'login' ? 'Senha de Login' : 'Senha de Atesto'}`);
             cancelarAlteracaoSenha();
         })
         .catch(err => {
@@ -1254,6 +1255,7 @@
             });
     }
 
+    // PONTO 2: Atualização e Sincronização Dinâmica do Dashboard
     function renderDashboardUnidade() {
         const dashContainer = document.getElementById('dashboard-container');
         if (!dashContainer || dashContainer.style.display === 'none') return;
@@ -1409,6 +1411,8 @@
         document.getElementById('dash-atestados').innerText = countAtestados;
         document.getElementById('dash-tempo-medio').innerText = mediaDias + ' dias';
 
+        renderizarTabela(unidadeDados);
+
         const selectQuery = document.getElementById('dash-query-select');
         if (selectQuery && selectQuery.value) {
             executarConsultaDashboard(selectQuery.value);
@@ -1509,9 +1513,17 @@
         printWindow.document.close();
     }
 
+    // PONTO 3: Validação de Segurança e Status para Download do PDF SEI
     function solicitarDownloadPdfSEITabela(idLinha) {
         linhaSelecionadaParaPdfSEI = planilhaDados.find(r => String(r.id) === String(idLinha));
         if (!linhaSelecionadaParaPdfSEI) return;
+
+        const atesto = (linhaSelecionadaParaPdfSEI.atestoFiscal || '').toString().trim().toUpperCase();
+        if (atesto !== 'SIM') {
+            alert('A emissão do PDF do SEI está bloqueada: o Atesto Fiscal precisa estar marcado como "SIM".');
+            return;
+        }
+
         document.getElementById('sei-download-senha').value = "";
         document.getElementById('modal-download-sei-auth').style.display = 'flex';
     }
@@ -1530,9 +1542,15 @@
         const userObj = credentials[userKey] || credentials[usuarioLogado];
         const senhaAtestoCorreta = userObj?.atestoPass || "";
         
-        if (senhaAtestoCorreta !== "" && senhaDigitada !== senhaAtestoCorreta) { alert("SENHA INVALIDA"); return; }
+        if (senhaAtestoCorreta !== "" && senhaDigitada !== senhaAtestoCorreta) { 
+            alert("SENHA INVALIDA"); 
+            return; 
+        }
         fecharModalDownloadSEI();
-        if (linhaSelecionadaParaPdfSEI) gerarPDFDespachoSEI(linhaSelecionadaParaPdfSEI);
+        if (linhaSelecionadaParaPdfSEI) {
+            gerarPDFDespachoSEI(linhaSelecionadaParaPdfSEI);
+            registrarLog(linhaSelecionadaParaPdfSEI.id, "Gerou e baixou o PDF Despacho SEI");
+        }
     }
 
     function saveData() {
@@ -1584,7 +1602,7 @@
         .then(res => res.json())
         .then(res => {
             hideSpinner();
-            let descricaoAcao = "Atualização de dados";
+            let descricaoAcao = "Atualização de dados da linha";
             if (dados.atestoFiscal === "SIM" && assinanteAtual) descricaoAcao += ` (Atestado por: ${assinanteAtual})`;
             registrarLog(id, descricaoAcao, assinanteAtual);
             assinanteAtual = "";
@@ -1920,8 +1938,33 @@
         document.getElementById('field-valor-aprov').value = formatarMoedaBR(aprov);
     }
 
+    // PONTO 1: Tratamento Dinâmico de Usuário na Modal de Atesto Fiscal
     function tratarMudancaAtesto(val) {
         if (val === "SIM" && estadoAnteriorAtesto !== "SIM") {
+            const selectAssinante = document.getElementById('atesto-usuario');
+            selectAssinante.innerHTML = "";
+
+            const assinantesOficiais = ["Saulo Bruno Lopes de Oliveira"];
+            const nomeUsuarioAtual = credentials[usuarioLogado]?.label || usuarioLogado;
+
+            let encontrou = false;
+            assinantesOficiais.forEach(nome => {
+                const opt = document.createElement('option');
+                opt.value = nome;
+                opt.textContent = nome;
+                selectAssinante.appendChild(opt);
+                if (nome.toLowerCase() === nomeUsuarioAtual.toLowerCase()) encontrou = true;
+            });
+
+            if (!encontrou) {
+                const optAtual = document.createElement('option');
+                optAtual.value = nomeUsuarioAtual;
+                optAtual.textContent = `${nomeUsuarioAtual} (Usuário Logado)`;
+                selectAssinante.appendChild(optAtual);
+            }
+
+            selectAssinante.value = encontrou ? assinantesOficiais[0] : nomeUsuarioAtual;
+            document.getElementById('atesto-senha').value = "";
             document.getElementById('modal-atesto-auth').style.display = 'flex';
         }
         avaliarStatusDGFAutomatico();
@@ -1956,10 +1999,11 @@
         XLSX.writeFile(wb, `Monitoramento_${competenciaSelecionada}.xlsx`);
     }
 
+    // PONTO 4: Registro Abrangente de Histórico de Logs
     function registrarLog(linhaId, acao, nomeAssinante = "") {
         const payload = {
             acao: "registrarLogServidor",
-            usuario: usuarioLogado.toUpperCase(),
+            usuario: (usuarioLogado || "SISTEMA").toUpperCase(),
             competencia: competenciaSelecionada || "-",
             id: linhaId || "-",
             acaoLog: acao,
