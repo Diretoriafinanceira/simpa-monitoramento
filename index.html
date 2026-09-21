@@ -738,7 +738,7 @@
     let seqSecreta = "";
 
     const exerciciosECompetencias = {
-        "2025": ["NOVEMBRO.2025", "DEZEMBRO.2025", "NOV.2025", "DEZ.2025"],
+        "2025": ["NOVEMBRO.2025", "DEZEMBRO.2025"],
         "2026": ["JANEIRO.2026", "FEVEREIRO.2026", "MARÇO.2026", "ABRIL.2026", "MAIO.2026", "JUNHO.2026", "JULHO.2026", "AGOSTO.2026", "SETEMBRO.2026", "OUTUBRO.2026", "NOVEMBRO.2026", "DEZEMBRO.2026"],
         "TOTAL": ["TOTAL"]
     };
@@ -758,35 +758,11 @@
 
     function padronizarNomeCompetencia(str) {
         if (!str) return "";
-        let s = str.toString().trim().toUpperCase();
-        
-        // Mapeamento e substituição de meses por extenso
-        const mesesExtensoMap = [
-            { id: "JANEIRO", rx: /^(JAN|JANEIRO)/ },
-            { id: "FEVEREIRO", rx: /^(FEV|FEVEREIRO)/ },
-            { id: "MARÇO", rx: /^(MAR|MARÇO|MARCO)/ },
-            { id: "ABRIL", rx: /^(ABR|ABRIL)/ },
-            { id: "MAIO", rx: /^(MAI|MAIO)/ },
-            { id: "JUNHO", rx: /^(JUN|JUNHO)/ },
-            { id: "JULHO", rx: /^(JUL|JULHO)/ },
-            { id: "AGOSTO", rx: /^(AGO|AGOSTO)/ },
-            { id: "SETEMBRO", rx: /^(SET|SETEMBRO)/ },
-            { id: "OUTUBRO", rx: /^(OUT|OUTUBRO)/ },
-            { id: "NOVEMBRO", rx: /^(NOV|NOVEMBRO)/ },
-            { id: "DEZEMBRO", rx: /^(DEZ|DEZEMBRO)/ }
-        ];
-
-        let partes = s.split(".");
-        let mesParte = partes[0].normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        let anoParte = partes.length > 1 ? "." + partes[partes.length - 1] : "";
-
-        for (let item of mesesExtensoMap) {
-            if (item.rx.test(mesParte)) {
-                return item.id + anoParte;
-            }
-        }
-
-        return s;
+        return str.toString()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toUpperCase()
+            .trim();
     }
 
     function atendeFiltroHospital(unidadePlanilha, targetHospital) {
@@ -1091,13 +1067,13 @@
 
             ordenados.forEach(m => {
                 const opt = document.createElement('option');
-                opt.value = padronizarNomeCompetencia(m);
-                opt.textContent = padronizarNomeCompetencia(m);
+                opt.value = m;
+                opt.textContent = expandirNomeMesCompetencia(m);
                 selectComp.appendChild(opt);
             });
 
-            if (!competenciaSelecionada || !ordenados.map(padronizarNomeCompetencia).includes(competenciaSelecionada)) {
-                competenciaSelecionada = padronizarNomeCompetencia(ordenados[0]);
+            if (!competenciaSelecionada || !ordenados.includes(competenciaSelecionada)) {
+                competenciaSelecionada = ordenados[0];
             }
             selectComp.value = competenciaSelecionada;
             
@@ -1137,7 +1113,7 @@
     }
 
     function alterarCompetencia(novaComp) {
-        competenciaSelecionada = padronizarNomeCompetencia(novaComp);
+        competenciaSelecionada = novaComp;
         localStorage.setItem('simpa_competencia', competenciaSelecionada);
         carregarDadosDaPlanilha(novaComp);
     }
@@ -1282,7 +1258,7 @@
             tr.innerHTML = `
                 <td>${row.servico || '-'}</td>
                 <td>${row.unidade || '-'}</td>
-                <td>${formatarDataBR(padronizarNomeCompetencia(row.competencia))}</td>
+                <td>${expandirNomeMesCompetencia(formatarDataBR(row.competencia))}</td>
                 <td>${row.tipo || '-'}</td>
                 <td>${row.formaPagamento || '-'}</td>
                 <td>${row.monitoramento || '-'}</td>
@@ -1335,21 +1311,15 @@
             let compSet = new Set();
             
             if (filterAno === "2025") {
-                planilhaDados.slice(0, 12).forEach(r => {
-                    if (r.competencia && String(r.competencia).trim() !== '') {
-                        compSet.add(padronizarNomeCompetencia(r.competencia));
-                    }
-                });
+                compSet.add("NOVEMBRO.2025");
+                compSet.add("DEZEMBRO.2025");
             } else if (filterAno === "2026") {
-                planilhaDados.slice(-12).forEach(r => {
-                    if (r.competencia && String(r.competencia).trim() !== '') {
-                        compSet.add(padronizarNomeCompetencia(r.competencia));
-                    }
-                });
+                exerciciosECompetencias["2026"].forEach(c => compSet.add(c));
             } else {
                 planilhaDados.forEach(r => {
                     if (r.competencia && String(r.competencia).trim() !== '') {
-                        compSet.add(padronizarNomeCompetencia(r.competencia));
+                        let compUpper = String(r.competencia).trim().toUpperCase();
+                        compSet.add(compUpper);
                     }
                 });
             }
@@ -1357,8 +1327,8 @@
             let ordenados = ordenarCompetenciasCronologicamente(Array.from(compSet));
             ordenados.forEach(c => {
                 const opt = document.createElement('option');
-                opt.value = padronizarNomeCompetencia(c);
-                opt.textContent = padronizarNomeCompetencia(c);
+                opt.value = c;
+                opt.textContent = expandirNomeMesCompetencia(c);
                 selectComp.appendChild(opt);
             });
             selectComp.value = valAtualComp;
@@ -1366,7 +1336,7 @@
     }
 
     function extrairAnoDoRegistro(r) {
-        if (planilhaDados && planilhaDados.length >= 24) {
+        if (planilhaDados && planilhaDados.length >= 12) {
             let index = planilhaDados.indexOf(r);
             if (index !== -1) {
                 if (index < 12) return 2025;
@@ -1431,24 +1401,19 @@
         const filterServico = document.getElementById('dash-filter-servico').value;
         const filterStatus = document.getElementById('dash-filter-status').value;
 
-        if (filterAno === "2025") {
-            unidadeDados = unidadeDados.slice(0, 12);
-            if (filterComp) {
-                let compUpper = padronizarNomeCompetencia(filterComp);
-                if (compUpper.includes("NOV") || compUpper.includes("NOVEMBRO")) {
-                    unidadeDados = unidadeDados.slice(0, 6);
-                } else if (compUpper.includes("DEZ") || compUpper.includes("DEZEMBRO")) {
-                    unidadeDados = unidadeDados.slice(6, 12);
-                }
-            }
-        } else if (filterAno === "2026") {
-            unidadeDados = unidadeDados.slice(-12);
-            if (filterComp) {
-                let compSelUpper = padronizarNomeCompetencia(filterComp);
-                unidadeDados = unidadeDados.filter(r => {
-                    let c = padronizarNomeCompetencia(r.competencia);
-                    return c === compSelUpper;
-                });
+        if (filterAno && filterAno !== "TODOS") {
+            unidadeDados = unidadeDados.filter(r => {
+                let anoReg = extrairAnoDoRegistro(r);
+                return String(anoReg) === String(filterAno);
+            });
+        }
+
+        if (filterAno === "2025" && filterComp) {
+            let compUpper = padronizarNomeCompetencia(filterComp);
+            if (compUpper.includes("NOV") || compUpper.includes("NOVEMBRO")) {
+                unidadeDados = unidadeDados.slice(0, 6);
+            } else if (compUpper.includes("DEZ") || compUpper.includes("DEZEMBRO")) {
+                unidadeDados = unidadeDados.slice(6, 12);
             }
         } else if (filterComp) {
             let compSelUpper = padronizarNomeCompetencia(filterComp);
@@ -1504,7 +1469,7 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${r.servico || '-'}</td>
-                    <td>${formatarDataBR(padronizarNomeCompetencia(r.competencia))}</td>
+                    <td>${expandirNomeMesCompetencia(formatarDataBR(r.competencia))}</td>
                     <td>${anoExibicao}</td>
                     <td>${r.sei || '-'}</td>
                     <td>${formatarMoedaBR(r.valorAp)}</td>
@@ -1628,7 +1593,7 @@
         <div class="titulo-doc">ATESTO DE SERVIÇO PRESTADO</div>
 
         <div class="texto-atesto">
-        <p>Atesto, para os devidos fins, que os serviços de anestesiologia constantes no <strong>Recibo nº ${dados.recibo || '-'}</strong>, validados por meio do <strong>Relatório de Auditoria GEAUD/CTAPE (89659601)</strong>, referentes à competência <strong>${formatarDataBR(padronizarNomeCompetencia(dados.competencia))}</strong>, foram devidamente prestados em conformidade com o <strong>Termo de Credenciamento nº 169/2025</strong>, encontrando-se em conformidade com as disposições contratuais.</p>
+        <p>Atesto, para os devidos fins, que os serviços de anestesiologia constantes no <strong>Recibo nº ${dados.recibo || '-'}</strong>, validados por meio do <strong>Relatório de Auditoria GEAUD/CTAPE (89659601)</strong>, referentes à competência <strong>${expandirNomeMesCompetencia(formatarDataBR(dados.competencia))}</strong>, foram devidamente prestados em conformidade com o <strong>Termo de Credenciamento nº 169/2025</strong>, encontrando-se em conformidade com as disposições contratuais.</p>
 
         <p>Declaro que os valores atestados correspondem ao montante aprovado em auditoria, estando a documentação fiscal regular quanto aos aspectos formais e materiais, apta à liquidação da despesa.</p>
 
@@ -1640,7 +1605,7 @@
         <table>
         <tr><th>Unidade Hospitalar:</th><td>${dados.unidade || '-'}</td></tr>
         <tr><th>Serviço:</th><td>${dados.servico || '-'}</td></tr>
-        <tr><th>Competência:</th><td>${formatarDataBR(padronizarNomeCompetencia(dados.competencia))}</td></tr>
+        <tr><th>Competência:</th><td>${expandirNomeMesCompetencia(formatarDataBR(dados.competencia))}</td></tr>
         <tr><th>Tipo de Processo:</th><td>${dados.tipo || '-'}</td></tr>
         <tr><th>Forma de Pagamento:</th><td>${dados.formaPagamento || '-'}</td></tr>
         <tr><th>Monitoramento:</th><td>${dados.monitoramento || '-'}</td></tr>
@@ -1733,7 +1698,7 @@
             saldoContrato: desformatarMoeda(document.getElementById('field-saldo-contrato').value),
             servico: document.getElementById('field-servico').value,
             unidade: document.getElementById('field-unidade').value,
-            competencia: padronizarNomeCompetencia(competenciaSelecionada),
+            competencia: competenciaSelecionada,
             sei: document.getElementById('field-sei').value,
             monitoramento: document.getElementById('field-monitoramento').value,
             seiStatus: document.getElementById('field-sei-status').value
@@ -1781,7 +1746,7 @@
         if(!rowExistente) return;
 
         if(confirm("Deseja limpar os lançamentos desta linha? (Serviço, Unidade, Competência e Tipo de Processo serão mantidos)")) {
-            let compAlvo = padronizarNomeCompetencia(competenciaSelecionada || rowExistente.competencia || "");
+            let compAlvo = expandirNomeMesCompetencia(competenciaSelecionada || rowExistente.competencia || "");
 
             const dadosPreservados = {
                 id: rowExistente.id,
@@ -2003,7 +1968,7 @@
         document.getElementById('field-servico').readOnly = true;
         document.getElementById('field-unidade').readOnly = true;
         document.getElementById('field-tipo').readOnly = true;
-        document.getElementById('field-forma-pagamento').disabled = false;
+        document.getElementById('field-forma-pagamento').disabled = true;
         document.getElementById('field-monitoramento').readOnly = false;
         document.getElementById('field-sei').readOnly = false;
         document.getElementById('field-sei-status').readOnly = false;
@@ -2088,26 +2053,24 @@
             const selectAssinante = document.getElementById('atesto-usuario');
             selectAssinante.innerHTML = "";
 
-            const assinantesOficiais = ["Saulo Bruno Lopes de Oliveira"];
-            const nomeUsuarioAtual = credentials[usuarioLogado]?.label || usuarioLogado;
+            let targetHospital = (usuarioLogado === "secretaria de saúde" || usuarioLogado === "coopanest" || usuarioLogado === "visão executiva" || usuarioLogado === "auditoria") ? visualizandoUnidadeSecretaria : usuarioLogado;
+            let targetLower = (targetHospital || "").toLowerCase();
 
-            let encontrou = false;
-            assinantesOficiais.forEach(nome => {
+            if (targetLower.includes("getulio") || targetLower.includes("hgv")) {
                 const opt = document.createElement('option');
-                opt.value = nome;
-                opt.textContent = nome;
+                opt.value = "Saulo Bruno Lopes de Oliveira";
+                opt.textContent = "Saulo Bruno Lopes de Oliveira";
                 selectAssinante.appendChild(opt);
-                if (nome.toLowerCase() === nomeUsuarioAtual.toLowerCase()) encontrou = true;
-            });
-
-            if (!encontrou) {
-                const optAtual = document.createElement('option');
-                optAtual.value = nomeUsuarioAtual;
-                optAtual.textContent = `${nomeUsuarioAtual} (Usuário Logado)`;
-                selectAssinante.appendChild(optAtual);
+                selectAssinante.value = "Saulo Bruno Lopes de Oliveira";
+            } else {
+                let nomeHospital = credentials[targetLower] ? credentials[targetLower].label : "UNIDADE HOSPITALAR";
+                const opt = document.createElement('option');
+                opt.value = nomeHospital;
+                opt.textContent = nomeHospital;
+                selectAssinante.appendChild(opt);
+                selectAssinante.value = nomeHospital;
             }
 
-            selectAssinante.value = encontrou ? assinantesOficiais[0] : nomeUsuarioAtual;
             document.getElementById('atesto-senha').value = "";
             document.getElementById('modal-atesto-auth').style.display = 'flex';
         }
@@ -2429,7 +2392,33 @@
     }
 
     function expandirNomeMesCompetencia(str) {
-        return padronizarNomeCompetencia(str);
+        if (!str) return "";
+        let comp = str.toString().trim().toUpperCase();
+
+        const mapaMeses = {
+            "JAN": "JANEIRO", "JANEIRO": "JANEIRO",
+            "FEV": "FEVEREIRO", "FEVEREIRO": "FEVEREIRO",
+            "MAR": "MARÇO", "MARCO": "MARÇO", "MARÇO": "MARÇO",
+            "ABR": "ABRIL", "ABRIL": "ABRIL",
+            "MAI": "MAIO", "MAIO": "MAIO",
+            "JUN": "JUNHO", "JUNHO": "JUNHO",
+            "JUL": "JULHO", "JULHO": "JULHO",
+            "AGO": "AGOSTO", "AGOSTO": "AGOSTO",
+            "SET": "SETEMBRO", "SETEMBRO": "SETEMBRO",
+            "OUT": "OUTUBRO", "OUTUBRO": "OUTUBRO",
+            "NOV": "NOVEMBRO", "NOVEMBRO": "NOVEMBRO",
+            "DEZ": "DEZEMBRO", "DEZEMBRO": "DEZEMBRO"
+        };
+
+        for (let key in mapaMeses) {
+            if (comp.startsWith(key)) {
+                let partes = comp.split(".");
+                let ano = partes.length > 1 ? "." + partes[partes.length - 1] : "";
+                return mapaMeses[key] + ano;
+            }
+        }
+
+        return comp;
     }
 
     function criarLinhaDoZero() {
@@ -2437,7 +2426,7 @@
         let targetHospital = (usuarioLogado === "secretaria de saúde" || usuarioLogado === "coopanest" || usuarioLogado === "visão executiva" || usuarioLogado === "auditoria") ? visualizandoUnidadeSecretaria : usuarioLogado;
         let nomeHospital = credentials[targetHospital] ? credentials[targetHospital].label : "UNIDADE HOSPITALAR";
 
-        let compAlvo = padronizarNomeCompetencia(competenciaSelecionada || "JANEIRO.2026");
+        let compAlvo = expandirNomeMesCompetencia(competenciaSelecionada || "JANEIRO.2026");
 
         const novoRegistro = {
             servico: "NOVO SERVIÇO ANESTESIA",
@@ -2493,7 +2482,7 @@
         const linhaBase = planilhaDados.find(r => String(r.id) === String(idLinha));
         if (!linhaBase) return;
 
-        let compAlvo = padronizarNomeCompetencia(competenciaSelecionada || linhaBase.competencia || "");
+        let compAlvo = expandirNomeMesCompetencia(competenciaSelecionada || linhaBase.competencia || "");
 
         const novoRegistro = {
             servico: linhaBase.servico || "SERVIÇO",
