@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Monitoramento - Anestesistas</title>
+    <!-- Biblioteca XLSX para exportação Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
+        /* Variáveis de Tema (Dark Mode por padrão) */
         :root {
             --bg-main: #1e293b;
             --bg-card: #0f172a;
@@ -20,6 +22,7 @@
             --card-dash: #1e293b;
         }
 
+        /* Variáveis de Tema (Light Mode) */
         body.light-mode {
             --bg-main: #f1f5f9;
             --bg-card: #ffffff;
@@ -34,6 +37,7 @@
             --card-dash: #f8fafc;
         }
 
+        /* Estilos Gerais Mobile-First */
         body { font-family: Arial, sans-serif; margin: 10px; background-color: var(--bg-main); color: var(--text-main); transition: background-color 0.3s, color 0.3s; position: relative; }
         @media (min-width: 768px) { body { margin: 20px; } }
 
@@ -43,7 +47,7 @@
         .container { max-width: 100%; margin: auto; background: var(--bg-card); padding: 12px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5); border: 1px solid var(--border-color); overflow-x: hidden; }
         @media (min-width: 768px) { .container { padding: 20px; } }
         
-        .btn { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; width: 100%; margin-bottom: 5px; }
+        .btn { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; width: 100%; margin-bottom: 5px; text-align: center; display: inline-block; box-sizing: border-box; }
         @media (min-width: 768px) { .btn { width: auto; padding: 10px 15px; font-size: 14px; margin-bottom: 0; } }
         .btn-sm { padding: 5px 10px; font-size: 11px; width: auto; }
         .btn-primary { background-color: #3498db; color: white; }
@@ -63,32 +67,42 @@
         .selector-group { display: flex; align-items: center; gap: 10px; width: auto; flex-wrap: wrap; }
         .selector-group label { font-weight: bold; color: var(--text-sub); font-size: 12px; }
 
-        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 10px; }
+        /* Tabela Responsiva */
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 10px; border: 1px solid var(--border-color); border-radius: 4px; }
         table { width: 100%; border-collapse: collapse; font-size: 10px; min-width: 1000px; }
         @media (min-width: 768px) { table { font-size: 11px; min-width: 1200px; } }
         
         th, td { border: 1px solid var(--border-color); padding: 6px 4px; text-align: center; word-wrap: break-word; overflow-wrap: break-word; }
-        th { background-color: var(--table-header-bg); color: var(--text-main); }
+        th { background-color: var(--table-header-bg); color: var(--text-main); font-weight: bold; text-transform: uppercase; font-size: 9px; }
+        @media (min-width: 768px) { th { font-size: 10px; } }
         tr:nth-child(even) { background-color: var(--table-row-even); }
         tr:nth-child(odd) { background-color: var(--table-row-odd); }
+        tr:hover { background-color: #33415550; }
 
-        .screen { display: none; }
+        /* Gerenciamento de Telas */
+        .screen { display: none; animation: fadeIn 0.3s; }
         .active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
+        /* Formulários */
         .form-group { margin-bottom: 12px; }
         .form-group label { display: block; margin-bottom: 4px; font-weight: bold; color: var(--text-sub); font-size: 12px; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid var(--border-color); border-radius: 4px; background-color: var(--bg-input); color: var(--text-main); font-size: 14px; }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #3498db; outline: none; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #3498db; outline: none; box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.3); }
+        .form-group input[readonly] { background-color: rgba(51, 65, 85, 0.3); color: var(--text-sub); cursor: not-allowed; }
         
+        /* Login */
         .login-box { width: 100%; max-width: 400px; margin: 20px auto; background: var(--bg-card); padding: 20px; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.7); border: 1px solid var(--border-color); box-sizing: border-box; }
         @media (min-width: 768px) { .login-box { margin: 50px auto; padding: 30px; } }
         
-        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
+        /* Loading Overlay */
+        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 99999; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(2px); }
         .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; }
-        .loading-text { margin-top: 15px; color: #ffffff; font-size: 14px; font-weight: bold; }
+        .loading-text { margin-top: 15px; color: #ffffff; font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .dashboard-title { text-align: center; color: var(--text-title); margin-bottom: 15px; font-size: 16px; font-weight: bold; }
+        /* Dashboard & Cards */
+        .dashboard-title { text-align: center; color: var(--text-title); margin-bottom: 15px; font-size: 16px; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; }
         @media (min-width: 768px) { .dashboard-title { font-size: 20px; } }
         
         .dash-cards-grid { 
@@ -97,434 +111,508 @@
             gap: 10px; 
             margin-bottom: 20px; 
         }
+        @media (min-width: 640px) { .dash-cards-grid { grid-template-columns: repeat(3, 1fr); } }
         @media (min-width: 1024px) { 
             .dash-cards-grid { 
-                grid-template-columns: repeat(12, minmax(0, 1fr)); 
+                grid-template-columns: repeat(6, minmax(0, 1fr)); 
                 gap: 8px; 
             } 
         }
+        @media (min-width: 1280px) { .dash-cards-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); } }
         
-        .dash-card { background: var(--card-dash); padding: 10px 6px; border-radius: 8px; border: 1px solid var(--border-color); text-align: center; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
-        .dash-card .number { font-size: 13px; font-weight: bold; color: #3498db; margin-top: 4px; word-break: break-word; }
-        @media (min-width: 1200px) { .dash-card .number { font-size: 14px; } }
-        .dash-card .label { font-size: 8px; color: var(--text-sub); text-transform: uppercase; font-weight: bold; line-height: 1.1; }
+        .dash-card { background: var(--card-dash); padding: 12px 8px; border-radius: 8px; border: 1px solid var(--border-color); text-align: center; display: flex; flex-direction: column; justify-content: center; min-width: 0; transition: transform 0.2s; }
+        .dash-card:hover { transform: translateY(-3px); border-color: #3498db; }
+        .dash-card .number { font-size: 14px; font-weight: bold; color: #3498db; margin-top: 6px; word-break: break-word; }
+        @media (min-width: 1200px) { .dash-card .number { font-size: 16px; } }
+        .dash-card .label { font-size: 9px; color: var(--text-sub); text-transform: uppercase; font-weight: bold; line-height: 1.2; letter-spacing: 0.5px; }
 
+        /* Painel Secretaria/Unidades */
         .secretaria-box { width: 100%; max-width: 500px; margin: 20px auto; background: var(--bg-card); padding: 20px; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.7); border: 1px solid var(--border-color); position: relative; box-sizing: border-box; }
         @media (min-width: 768px) { .secretaria-box { margin: 30px auto; padding: 30px; } }
 
-        .unidades-container { display: none; margin-top: 15px; text-align: left; }
-        .btn-unidade { display: block; width: 100%; text-align: left; margin-bottom: 8px; padding: 10px; background-color: var(--card-dash); border: 1px solid var(--border-color); border-radius: 4px; font-size: 12px; color: var(--text-sub); font-weight: bold; transition: background 0.2s; }
-        @media (min-width: 768px) { .btn-unidade { font-size: 14px; padding: 12px; } }
-        .btn-unidade:hover { background-color: #475569; color: white; cursor: pointer; }
+        .unidades-container { display: none; margin-top: 15px; text-align: left; animation: slideDown 0.3s; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .btn-unidade { display: block; width: 100%; text-align: left; margin-bottom: 8px; padding: 12px; background-color: var(--card-dash); border: 1px solid var(--border-color); border-radius: 4px; font-size: 13px; color: var(--text-main); font-weight: bold; transition: all 0.2s; text-transform: uppercase; cursor: pointer; }
+        @media (min-width: 768px) { .btn-unidade { font-size: 14px; padding: 14px; } }
+        .btn-unidade:hover { background-color: #3498db; color: white; border-color: #3498db; transform: translateX(5px); }
 
-        .theme-toggle-top { position: fixed; top: 10px; right: 10px; z-index: 1000; display: flex; gap: 6px; align-items: center; }
+        /* Botões Flutuantes e Fixos Topo */
+        .theme-toggle-top { position: fixed; top: 10px; right: 10px; z-index: 1000; display: flex; gap: 6px; align-items: center; background: rgba(15, 23, 42, 0.6); padding: 5px; border-radius: 20px; backdrop-filter: blur(3px); border: 1px solid var(--border-color); }
         @media (min-width: 768px) { .theme-toggle-top { top: 15px; right: 20px; gap: 8px; } }
 
-        .logs-floating-btn { position: fixed; bottom: 15px; right: 15px; z-index: 999; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border-radius: 30px; padding: 10px 15px; font-size: 11px; display: none; width: auto; margin-bottom: 0; }
-        .lakehouse-floating-btn { position: fixed; bottom: 15px; left: 15px; z-index: 999; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border-radius: 30px; padding: 10px 15px; font-size: 11px; display: none; background-color: #8e44ad; color: white; width: auto; margin-bottom: 0; }
+        .logs-floating-btn { position: fixed; bottom: 15px; right: 15px; z-index: 999; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border-radius: 30px; padding: 10px 18px; font-size: 12px; display: none; width: auto; margin-bottom: 0; }
+        .lakehouse-floating-btn { position: fixed; bottom: 15px; left: 15px; z-index: 999; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border-radius: 30px; padding: 10px 18px; font-size: 12px; display: none; background-color: #8e44ad; color: white; width: auto; margin-bottom: 0; }
         
-        .pwd-floating-btn { position: fixed; bottom: 15px; left: 15px; z-index: 998; background-color: #64748b; color: white; opacity: 0.45; border-radius: 30px; padding: 8px 12px; font-size: 11px; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.3); transition: opacity 0.2s; width: auto; margin-bottom: 0; }
-        .pwd-floating-btn:hover { opacity: 0.9; }
+        .pwd-floating-btn { position: fixed; bottom: 65px; right: 15px; z-index: 998; background-color: #64748b; color: white; opacity: 0.7; border-radius: 30px; padding: 8px 15px; font-size: 11px; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.3); transition: opacity 0.2s; width: auto; margin-bottom: 0; }
+        .pwd-floating-btn:hover { opacity: 1; }
 
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; justify-content: center; align-items: center; padding: 10px; box-sizing: border-box; }
-        .modal-content { background: var(--bg-card); padding: 20px; border-radius: 8px; width: 100%; max-width: 550px; border: 1px solid var(--border-color); box-sizing: border-box; max-height: 90vh; overflow-y: auto; }
+        /* Modais */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; padding: 10px; box-sizing: border-box; backdrop-filter: blur(2px); animation: fadeIn 0.2s; }
+        .modal-content { background: var(--bg-card); padding: 20px; border-radius: 8px; width: 100%; max-width: 550px; border: 1px solid var(--border-color); box-sizing: border-box; max-height: 90vh; overflow-y: auto; position: relative; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.7); }
         @media (min-width: 768px) { .modal-content { padding: 25px; } }
+        .close-modal { position: absolute; top: 10px; right: 15px; font-size: 20px; color: var(--text-sub); cursor: pointer; background: none; border: none; padding: 0; }
+        .close-modal:hover { color: #e74c3c; }
         
-        .dash-query-box { background: var(--card-dash); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 20px; }
+        /* Utilitários Dashboard Query */
+        .dash-query-box { background: var(--card-dash); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-bottom: 20px; }
         @media (min-width: 768px) { .dash-query-box { padding: 18px; margin-bottom: 25px; } }
-        .query-result-box { margin-top: 15px; padding: 12px; background: var(--bg-card); border-radius: 6px; border-left: 4px solid #3498db; display: none; }
+        .query-result-box { margin-top: 15px; padding: 15px; background: rgba(52, 152, 219, 0.1); border-radius: 6px; border-left: 4px solid #3498db; display: none; animation: slideDown 0.3s; }
 
-        .btn-duplicar-item { width: 100%; text-align: left; padding: 10px; margin-bottom: 8px; background: var(--card-dash); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 12px; }
-        .btn-duplicar-item:hover { background: #3498db; color: white; }
+        /* Lista Duplicar */
+        .btn-duplicar-item { width: 100%; text-align: left; padding: 12px; margin-bottom: 8px; background: var(--card-dash); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 12px; box-sizing: border-box; }
+        .btn-duplicar-item:hover { background: #3498db; color: white; border-color: #3498db; transform: translateX(3px); }
 
+        /* Estilos de Impressão (PDF) */
         @media print {
-            body { background: white !important; color: black !important; margin: 0; }
-            .theme-toggle-top, .header-controls, .btn, .dash-query-box, .logs-floating-btn, .lakehouse-floating-btn, .pwd-floating-btn, #screen-login, #screen-secretaria-unidades, #screen-form, #screen-alterar-senha, #screen-pendente { display: none !important; }
-            .container { box-shadow: none !important; border: none !important; padding: 0 !important; background: transparent !important; }
-            table { width: 100% !important; border: 1px solid #000 !important; font-size: 8pt !important; min-width: auto !important; }
-            th, td { border: 1px solid #333 !important; color: black !important; background: transparent !important; }
+            body { background: white !important; color: black !important; margin: 0; padding: 10px; }
+            .theme-toggle-top, .header-controls, .btn, .dash-query-box, .logs-floating-btn, .lakehouse-floating-btn, .pwd-floating-btn, #screen-login, #screen-secretaria-unidades, #screen-form, #screen-alterar-senha, #screen-pendente, .theme-toggle-top * { display: none !important; }
+            .container { box-shadow: none !important; border: none !important; padding: 0 !important; background: transparent !important; max-width: 100% !important; width: 100% !important; }
+            #screen-home { display: block !important; }
+            #normal-table-container { display: block !important; }
+            #dashboard-container { display: none !important; }
+            h2 { font-size: 14pt !important; color: black !important; margin-top: 0; text-align: center; }
+            table { width: 100% !important; border: 1px solid #000 !important; font-size: 7pt !important; min-width: auto !important; table-layout: fixed; }
+            th, td { border: 1px solid #000 !important; color: black !important; background: transparent !important; padding: 3px 1px !important; }
+            th { font-size: 7px !important; text-transform: uppercase; }
+            table th:last-child, table td:last-child { display: none !important; }
         }
     </style>
 </head>
 <body>
 
+<!-- Overlay de Carregamento Global -->
 <div id="global-loading" class="loading-overlay">
     <div class="spinner"></div>
-    <div class="loading-text">Carregando...</div>
+    <div class="loading-text">Processando...</div>
 </div>
 
+<!-- Controles Fixos Superiores -->
 <div class="theme-toggle-top">
-    <button class="btn btn-purple btn-sm" id="btn-fixed-dash" style="display:none;" onclick="alternarVisaoDashboardFixo()">📊 Dashboard</button>
-    <button class="btn btn-warning btn-sm" id="btn-theme-toggle" onclick="toggleTheme()">☀️ Claro</button>
+    <button class="btn btn-danger btn-sm" id="btn-top-logout" style="display:none; margin:0;" onclick="voltarParaMenuOuLogin()">Sair / Voltar</button>
+    <button class="btn btn-purple btn-sm" id="btn-fixed-dash" style="display:none; margin:0;" onclick="alternarVisaoDashboardFixo()">📊 Dash</button>
+    <button class="btn btn-secondary btn-sm" id="btn-top-voltar-painel" style="display:none; margin:0;" onclick="goToHome()">Voltar ao Painel</button>
+    <button class="btn btn-warning btn-sm" id="btn-theme-toggle" style="margin:0;" onclick="toggleTheme()">☀️ Claro</button>
 </div>
 
+<!-- Botões Flutuantes Inferiores -->
 <button id="btn-flutuante-logs" class="btn btn-secondary logs-floating-btn" onclick="abrirModalLogs()">📋 Histórico</button>
 <button id="btn-flutuante-lakehouse" class="btn btn-purple lakehouse-floating-btn" style="display:none;" onclick="abrirModalLakehouse()">🧠 Lakehouse</button>
-<button id="btn-flutuante-pwd" class="btn pwd-floating-btn" style="display:none;" onclick="iniciarTrocaSenha('home-flutuante')">🔑 Alterar Senha</button>
+<button id="btn-flutuante-pwd" class="btn pwd-floating-btn" style="display:none;" onclick="iniciarTrocaSenha('home-flutuante')">🔑 Senha</button>
 
+<!-- =========================================================================
+     MODAIS
+     ========================================================================= -->
+
+<!-- Modal: Duplicar Linha -->
 <div id="modal-duplicar-linha" class="modal">
     <div class="modal-content" style="max-width: 480px;">
-        <h3 style="margin-top: 0; text-align: center;">➕ Duplicar Linha Existente</h3>
-        <p style="font-size: 12px; color: var(--text-sub); text-align: center;">Selecione qual linha/serviço deseja duplicar nesta unidade:</p>
-        <div id="lista-linhas-para-duplicar" style="max-height: 300px; overflow-y: auto; margin: 15px 0;"></div>
-        <div style="display: flex; justify-content: flex-end;">
-            <button class="btn btn-secondary" onclick="fecharModalDuplicarLinha()">Cancelar</button>
+        <button class="close-modal" onclick="fecharModalDuplicarLinha()">✕</button>
+        <h3 style="margin-top: 0; text-align: center; color: #2ecc71;">➕ Adicionar Nova Linha</h3>
+        <p style="font-size: 12px; color: var(--text-sub); text-align: center; margin-bottom: 15px;">Selecione uma linha existente para usar como base (duplicar serviço/unidade) ou crie uma do zero.</p>
+        <button class="btn btn-success" style="width: 100%; margin-bottom: 15px; font-size: 13px;" onclick="criarLinhaDoZero()">🆕 Criar Linha em Branco</button>
+        <div style="border-top: 1px solid var(--border-color); padding-top: 10px;">
+            <p style="font-size: 11px; color: var(--text-sub); text-align: center; font-weight: bold; text-transform: uppercase;">Ou duplique uma existente:</p>
+            <div id="lista-linhas-para-duplicar" style="max-height: 250px; overflow-y: auto; margin: 10px 0;"></div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+            <button class="btn btn-secondary btn-sm" onclick="fecharModalDuplicarLinha()">Cancelar</button>
         </div>
     </div>
 </div>
 
+<!-- Modal: Gerenciar Senhas (Admin SES) -->
 <div id="modal-gerenciar-senhas" class="modal">
     <div class="modal-content">
-        <h3 style="margin-top: 0; text-align: center;">🔑 Visualizar e Resetar Senhas</h3>
-        <p style="font-size: 11px; color: var(--text-sub); text-align: center;">Painel Exclusivo de Administração SES</p>
-        <div id="lista-senhas-usuarios" style="max-height: 250px; overflow-y: auto; margin: 15px 0;"></div>
-        <div style="display: flex; justify-content: flex-end;">
+        <button class="close-modal" onclick="fecharModalGerenciarSenhas()">✕</button>
+        <h3 style="margin-top: 0; text-align: center;">🔑 Painel de Credenciais</h3>
+        <p style="font-size: 11px; color: var(--text-sub); text-align: center; margin-bottom: 15px;">Visualização e reset exclusivo para Administração Central SES.</p>
+        <div id="lista-senhas-usuarios" style="max-height: 300px; overflow-y: auto; margin: 15px 0; padding-right: 5px;"></div>
+        <div style="display: flex; justify-content: flex-end; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
             <button class="btn btn-secondary" onclick="fecharModalGerenciarSenhas()">Fechar</button>
         </div>
     </div>
 </div>
 
+<!-- Modal: Lakehouse (Consultas Estratégicas Rede) -->
 <div id="modal-lakehouse" class="modal">
     <div class="modal-content" style="max-width: 700px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-            <h3 style="margin: 0; font-size: 14px;">🧠 Lakehouse - Consultas Inteligentes</h3>
-            <button class="btn btn-secondary btn-sm" onclick="fecharModalLakehouse()">✕</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <h3 style="margin: 0; font-size: 16px;">🧠 Lakehouse - Inteligência de Dados SES</h3>
+            <button class="close-modal" style="position: static;" onclick="fecharModalLakehouse()">✕</button>
         </div>
-        <p style="font-size: 11px; color: var(--text-sub);">Selecione uma pergunta estratégica para cruzar dados da rede:</p>
+        <p style="font-size: 12px; color: var(--text-sub); margin-bottom: 15px;">Cruze informações de toda a rede hospitalar respondendo a perguntas estratégicas em tempo real.</p>
         <div class="form-group">
             <select id="lakehouse-select-pergunta" onchange="executarConsultaLakehouse(this.value)">
-                <option value="">-- Selecione uma Pergunta Estratégica --</option>
-                <option value="total_geral_apresentado">Qual o valor total apresentado em todos os hospitais?</option>
-                <option value="total_geral_pago">Quanto já foi pago somando todas as unidades?</option>
-                <option value="processos_atestados_rede">Quantos processos no total da rede possuem Atesto Fiscal SIM?</option>
-                <option value="hospital_maior_volume">Qual hospital possui o maior volume financeiro de processos?</option>
-                <option value="pendencias_geral_sei">Quantos processos em toda a rede estão sem número de SEI?</option>
-                <option value="maior_valor_glosado">Qual hospital teve o maior valor glosado na rede?</option>
-                <option value="processos_com_ob">Quantos processos já possuem Ordem Bancária (OB) emitida?</option>
-                <option value="saldo_total_pendente">Qual o montante total de saldo financeiro a ser pago na rede?</option>
-                <option value="media_dias_tramitacao">Qual a média geral de dias desde o envio até a emissão da OB?</option>
-                <option value="processos_aguardando_sefaz">Quantos processos na rede estão aguardando liberação na SEFAZ?</option>
+                <option value="">-- Selecione uma Análise Estratégica --</option>
+                <option value="total_geral_apresentado">💰 Qual o valor total apresentado acumulado em toda a rede?</option>
+                <option value="total_geral_pago">✅ Quanto já foi efetivamente pago somando todas as unidades?</option>
+                <option value="processos_atestados_rede">✍️ Quantos processos na rede já possuem Atesto Fiscal confirmado?</option>
+                <option value="hospital_maior_volume">🏥 Qual hospital possui o maior volume financeiro apresentado?</option>
+                <option value="pendencias_geral_sei">⚠️ Quantos processos em toda a rede estão sem número de SEI?</option>
+                <option value="maior_valor_glosado">📉 Qual hospital teve o maior valor absoluto glosado pela auditoria?</option>
+                <option value="processos_com_ob">🏦 Quantos processos já tiveram Ordem Bancária (OB) emitida?</option>
+                <option value="saldo_total_pendente">📊 Qual o montante total de saldo financeiro a pagar na rede?</option>
+                <option value="media_dias_tramitacao">⏱️ Qual a média geral de dias na rede desde o envio até a emissão da OB?</option>
+                <option value="processos_aguardando_sefaz">💸 Quantos processos na rede estão aguardando pagamento (Status SEFAZ)?</option>
             </select>
         </div>
-        <div id="lakehouse-resultado-box" class="query-result-box" style="display: block; margin-top: 15px;">
-            <h4 style="margin: 0 0 5px 0; font-size: 13px; color: var(--text-title);">Resultado do Cruzamento:</h4>
-            <p id="lakehouse-resultado-texto" style="margin: 0; font-size: 13px; font-weight: bold; color: #2ecc71;">Selecione uma pergunta acima para iniciar a análise.</p>
+        <div id="lakehouse-resultado-box" class="query-result-box" style="display: block; margin-top: 15px; background: rgba(142, 68, 173, 0.1); border-left-color: #8e44ad;">
+            <h4 style="margin: 0 0 8px 0; font-size: 13px; color: var(--text-title); text-transform: uppercase;">Resultado da Análise:</h4>
+            <p id="lakehouse-resultado-texto" style="margin: 0; font-size: 14px; font-weight: bold; color: #2ecc71;">Selecione uma pergunta acima para iniciar o processamento dos dados.</p>
         </div>
-        <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
+        <div style="display: flex; justify-content: flex-end; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 10px;">
             <button class="btn btn-secondary" onclick="fecharModalLakehouse()">Fechar</button>
         </div>
     </div>
 </div>
 
+<!-- Modal: Autenticação Atesto Fiscal -->
 <div id="modal-atesto-auth" class="modal">
     <div class="modal-content" style="max-width: 380px;">
-        <h3 style="margin-top: 0; text-align: center;">Assinatura do Atesto Fiscal</h3>
-        <p style="font-size: 11px; color: var(--text-sub); text-align: center;">Selecione o assinante e informe a senha para confirmar.</p>
+        <h3 style="margin-top: 0; text-align: center; color: #8e44ad;">✍️ Assinatura Eletrônica</h3>
+        <p style="font-size: 12px; color: var(--text-sub); text-align: center; margin-bottom: 15px;">Para confirmar o Atesto Fiscal, selecione o assinante e digite a senha exclusiva.</p>
         <div class="form-group">
-            <label>Assinante:</label>
+            <label>Assinante Autorizado:</label>
             <select id="atesto-usuario">
               <option value="Saulo Bruno Lopes de Oliveira">Saulo Bruno Lopes de Oliveira</option>
             </select>
         </div>
         <div class="form-group">
             <label>Senha do Atesto Fiscal:</label>
-            <input type="password" id="atesto-senha" placeholder="Digite a senha" onkeydown="if(event.key === 'Enter') confirmarAssinaturaAtesto();">
+            <input type="password" id="atesto-senha" placeholder="Digite a senha de assinatura" onkeydown="if(event.key === 'Enter') confirmarAssinaturaAtesto();">
         </div>
-        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px;">
-            <button class="btn btn-secondary" onclick="fecharModalAtestoAuth(false)">Cancelar</button>
-            <button class="btn btn-success" onclick="confirmarAssinaturaAtesto()">Assinar & Atestar</button>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+            <button class="btn btn-secondary btn-sm" onclick="fecharModalAtestoAuth(false)">Cancelar</button>
+            <button class="btn btn-purple btn-sm" onclick="confirmarAssinaturaAtesto()">Assinar & Confirmar</button>
         </div>
     </div>
 </div>
 
+<!-- Modal: Autenticação Download PDF SEI -->
 <div id="modal-download-sei-auth" class="modal">
     <div class="modal-content" style="max-width: 380px;">
-        <h3 style="margin-top: 0; text-align: center;">Baixar PDF do SEI</h3>
-        <p style="font-size: 11px; color: var(--text-sub); text-align: center;">Informe a senha de Atesto Fiscal.</p>
+        <h3 style="margin-top: 0; text-align: center; color: #3498db;">📄 Visualizar Documento</h3>
+        <p style="font-size: 12px; color: var(--text-sub); text-align: center; margin-bottom: 15px;">A geração do documento requer validação. Informe a senha de Atesto Fiscal do usuário logado.</p>
         <div class="form-group">
-            <label>Senha:</label>
-            <input type="password" id="sei-download-senha" placeholder="Digite sua senha" onkeydown="if(event.key === 'Enter') confirmarDownloadPdfSEI();">
+            <label>Senha de Atesto:</label>
+            <input type="password" id="sei-download-senha" placeholder="Confirme sua senha" onkeydown="if(event.key === 'Enter') confirmarDownloadPdfSEI();">
         </div>
-        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px;">
-            <button class="btn btn-secondary" onclick="fecharModalDownloadSEI()">Cancelar</button>
-            <button class="btn btn-primary" onclick="confirmarDownloadPdfSEI()">Confirmar & Baixar</button>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+            <button class="btn btn-secondary btn-sm" onclick="fecharModalDownloadSEI()">Cancelar</button>
+            <button class="btn btn-primary btn-sm" onclick="confirmarDownloadPdfSEI()">Validar & Abrir</button>
         </div>
     </div>
 </div>
 
+<!-- Modal: Escolha Tipo de Senha para Alterar -->
 <div id="modal-escolha-tipo-senha" class="modal">
     <div class="modal-content" style="max-width: 380px; text-align: center;">
-        <h3 style="margin-top: 0;">Alterar Senha</h3>
-        <p style="font-size: 12px; color: var(--text-sub);">Qual senha você deseja alterar?</p>
-        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-            <button class="btn btn-primary" onclick="selecionarTipoSenha('login')">🔑 Senha de Login</button>
-            <button class="btn btn-purple" onclick="selecionarTipoSenha('atesto')">✍️ Senha do Atesto Fiscal</button>
-            <button class="btn btn-secondary" onclick="fecharModalEscolhaSenha()">Cancelar</button>
+        <h3 style="margin-top: 0;">Segurança da Conta</h3>
+        <p style="font-size: 13px; color: var(--text-sub); margin-bottom: 20px;">Qual credencial você deseja atualizar?</p>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button class="btn btn-primary" style="font-size: 13px;" onclick="selecionarTipoSenha('login')">🔑 Senha de Acesso (Login)</button>
+            <button class="btn btn-purple" style="font-size: 13px;" onclick="selecionarTipoSenha('atesto')">✍️ Senha de Atesto Fiscal (Assinatura)</button>
+            <div style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="fecharModalEscolhaSenha()">Cancelar</button>
+            </div>
         </div>
     </div>
 </div>
 
+<!-- Modal: Histórico de Logs -->
 <div id="modal-logs" class="modal">
-    <div class="modal-content" style="max-width: 600px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-            <h3 style="margin: 0; font-size: 14px;">📜 Histórico de Alterações</h3>
-            <button class="btn btn-secondary btn-sm" onclick="fecharModalLogs()">✕</button>
+    <div class="modal-content" style="max-width: 650px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <h3 style="margin: 0; font-size: 16px;">📜 Histórico de Auditoria do Sistema</h3>
+            <button class="close-modal" style="position: static;" onclick="fecharModalLogs()">✕</button>
         </div>
         
-        <div id="logs-container-list" style="max-height: 280px; overflow-y: auto; background: var(--bg-main); padding: 10px; border-radius: 6px; font-size: 11px;">
-            <p style="color: var(--text-sub); text-align: center;">Carregando histórico...</p>
+        <div id="logs-container-list" style="max-height: 350px; overflow-y: auto; background: var(--bg-main); padding: 12px; border-radius: 6px; font-size: 11px; border: 1px solid var(--border-color);">
+            <p style="color: var(--text-sub); text-align: center; padding: 20px;">Carregando registros...</p>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; flex-wrap: wrap; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
             <div>
-                <button id="btn-mostrar-mais-logs" class="btn btn-primary btn-sm" onclick="expandirLogsPaginados()">+ Mostrar mais</button>
-                <button id="btn-limpar-historico-master" class="btn btn-danger btn-sm" style="display:none;" onclick="solicitarLimpezaHistorico()">Limpar</button>
+                <button id="btn-mostrar-mais-logs" class="btn btn-primary btn-sm" onclick="expandirLogsPaginados()">+ Ver tudo (Paginado)</button>
+                <button id="btn-limpar-historico-master" class="btn btn-danger btn-sm" style="display:none;" onclick="solicitarLimpezaHistorico()">🗑️ Limpar Tudo (Admin)</button>
             </div>
-            <div id="pagination-controls" style="display: none; align-items: center; gap: 6px;">
-                <button class="btn btn-secondary btn-sm" onclick="mudarPaginaLogs(-1)">◀</button>
-                <span id="page-indicator" style="font-size: 11px; font-weight: bold; color: var(--text-title);">1/1</span>
-                <button class="btn btn-secondary btn-sm" onclick="mudarPaginaLogs(1)">▶</button>
+            <div id="pagination-controls" style="display: none; align-items: center; gap: 8px; background: var(--card-dash); padding: 5px 10px; border-radius: 20px; border: 1px solid var(--border-color);">
+                <button class="btn btn-secondary btn-sm" style="padding: 3px 8px; margin:0;" onclick="mudarPaginaLogs(-1)">◀</button>
+                <span id="page-indicator" style="font-size: 12px; font-weight: bold; color: var(--text-title); min-width: 40px; text-align: center;">1 / 1</span>
+                <button class="btn btn-secondary btn-sm" style="padding: 3px 8px; margin:0;" onclick="mudarPaginaLogs(1)">▶</button>
             </div>
         </div>
     </div>
 </div>
 
+<!-- =========================================================================
+     CORPO PRINCIPAL (CONTAINER)
+     ========================================================================= -->
+
 <div class="container">
+
+    <!-- TELA 1: LOGIN -->
     <div id="screen-login" class="screen active">
         <div class="login-box">
-            <h2 style="text-align: center; margin-bottom: 5px;">Acesso ao Sistema</h2>
             <div class="logo-container">
                 <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' width='100%25'><rect width='120' height='120' rx='15' fill='%232c3e50'/><path d='M25 50 h20 l5 -20 l5 40 l5 -25 l5 5 h30' fill='none' stroke='%233498db' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/><text x='60' y='88' font-family='Arial, sans-serif' font-weight='900' font-size='20' fill='%23ffffff' text-anchor='middle' letter-spacing='3'>SIMPA</text><text x='60' y='104' font-family='Arial, sans-serif' font-weight='bold' font-size='7' fill='%233498db' text-anchor='middle' letter-spacing='0.5'>MONITORAMENTO</text></svg>" class="logo-img" alt="Logo SIMPA">
             </div>
+            <h2 style="text-align: center; margin: 0 0 20px 0; font-size: 1.4rem;">Acesso ao Sistema</h2>
 
             <div class="form-group">
-                <label>Usuário:</label>
+                <label>Usuário / Unidade:</label>
                 <select id="login-user">
-                    <option value="secretaria de saúde">SECRETARIA DE SAÚDE</option>
-                    <option value="coopanest">COOPANEST</option>
+                    <option value="" disabled selected>-- Selecione sua Unidade --</option>
+                    <option value="secretaria de saúde">SECRETARIA DE SAÚDE (SES-PE)</option>
+                    <option value="coopanest">COOPANEST-PE</option>
                     <option value="visão executiva">VISÃO EXECUTIVA</option>
                     <option value="auditoria">AUDITORIA</option>
-                    <option value="hosp. agamenom magalhães">HOSPITAL AGAMENOM MAGALHÃES</option>
-                    <option value="hosp. barão de lucena">HOSPITAL BARÃO DE LUCENA</option>
-                    <option value="hosp. da restauração">HOSPITAL DA RESTAURAÇÃO</option>
-                    <option value="hosp. getulio vargas">HOSPITAL GETULIO VARGAS</option>
-                    <option value="hosp. otavio de freitas">HOSPITAL OTAVIO DE FREITAS</option>
-                    <option value="hosp. regional do agreste">HOSPITAL REGIONAL DO AGRESTE</option>
+                    <optgroup label="Hospitais">
+                        <option value="hosp. agamenom magalhães">HOSPITAL AGAMENOM MAGALHÃES (HAM)</option>
+                        <option value="hosp. barão de lucena">HOSPITAL BARÃO DE LUCENA (HBL)</option>
+                        <option value="hosp. da restauração">HOSPITAL DA RESTAURAÇÃO (HR)</option>
+                        <option value="hosp. getulio vargas">HOSPITAL GETÚLIO VARGAS (HGV)</option>
+                        <option value="hosp. otavio de freitas">HOSPITAL OTÁVIO DE FREITAS (HOF)</option>
+                        <option value="hosp. regional do agreste">HOSPITAL REGIONAL DO AGRESTE (HRA)</option>
+                    </optgroup>
                 </select>
             </div>
             <div class="form-group">
-                <label>Senha:</label>
+                <label>Senha de Acesso:</label>
                 <input type="password" id="login-pass" placeholder="Digite sua senha" onkeydown="if(event.key === 'Enter') verifyLogin();">
             </div>
-            <button class="btn btn-success" style="width: 100%; margin-top: 10px;" onclick="verifyLogin()">Entrar</button>
+            <button class="btn btn-success" style="width: 100%; margin-top: 15px; font-size: 15px; padding: 12px;" onclick="verifyLogin()">Entrar no Sistema</button>
+            <p style="text-align: center; font-size: 10px; color: var(--text-sub); margin-top: 20px;">SIMPA v2.0 - Sistema Integrado de Monitoramento<br>© SES-PE / COOPANEST-PE</p>
         </div>
     </div>
 
+    <!-- TELA: ACESSO PENDENTE -->
     <div id="screen-pendente" class="screen">
         <div class="secretaria-box" style="text-align: center;">
-            <h2 id="nome-hospital-pendente">Acesso Integrado</h2>
-            <p style="color: var(--text-sub);">O painel de monitoramento desta unidade está ativo.</p>
+            <h2 id="nome-hospital-pendente" style="color: #f1c40f;">Acesso Restrito</h2>
+            <p style="color: var(--text-main); margin-bottom: 20px;">O painel desta unidade está configurado apenas para visualização de dados consolidados no Dashboard ou gerenciamento via formulário.</p>
             <button class="btn btn-secondary" onclick="voltarParaMenuOuLogin()">Voltar ao Menu</button>
         </div>
     </div>
     
+    <!-- TELA 2: MENU SECRETARIA -->
     <div id="screen-secretaria-unidades" class="screen">
         <div class="secretaria-box">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <span style="font-size: 11px; color: var(--text-sub);" id="label-painel-usuario">PAINEL SES</span>
-                <button class="btn btn-warning btn-sm" id="btn-secret-reset-pwd" style="display: none;" onclick="abrirModalGerenciarSenhas()">🔑 Resetar Senhas</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                <span style="font-size: 11px; font-weight: bold; color: #3498db; text-transform: uppercase; letter-spacing: 1px;" id="label-painel-usuario">PAINEL ADMINISTRATIVO</span>
+                <button class="btn btn-warning btn-sm" id="btn-secret-reset-pwd" style="display: none; margin: 0; padding: 4px 8px;" onclick="abrirModalGerenciarSenhas()">🔑 Gestão Senhas</button>
             </div>
 
             <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120' width='100%25'><rect width='120' height='120' rx='15' fill='%232c3e50'/><path d='M25 50 h20 l5 -20 l5 40 l5 -25 l5 5 h30' fill='none' stroke='%233498db' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/><text x='60' y='88' font-family='Arial, sans-serif' font-weight='900' font-size='20' fill='%23ffffff' text-anchor='middle' letter-spacing='3'>SIMPA</text><text x='60' y='104' font-family='Arial, sans-serif' font-weight='bold' font-size='7' fill='%233498db' text-anchor='middle' letter-spacing='0.5'>MONITORAMENTO</text></svg>" class="logo-img-small" alt="Logo SIMPA">
             
-            <h2 style="text-align: center;" id="titulo-painel-unidades">Painel Administrativo</h2>
-            <p style="color: var(--text-sub); text-align: center; margin-bottom: 20px; font-size: 12px;">Selecione a unidade hospitalar para gerenciar ou visualizar.</p>
+            <h2 style="text-align: center; margin-bottom: 5px;" id="titulo-painel-unidades">Painel de Controle</h2>
+            <p style="color: var(--text-sub); text-align: center; margin-bottom: 25px; font-size: 13px;">Selecione uma unidade hospitalar abaixo para visualizar o monitoramento específico ou gerenciar registros.</p>
             
-            <button class="btn btn-primary" style="width: 100%; font-size: 14px; padding: 10px;" onclick="toggleUnidadesMenu()">Unidades Hospitalares</button>
+            <button class="btn btn-primary" style="width: 100%; font-size: 15px; padding: 12px; display: flex; justify-content: space-between; align-items: center;" onclick="toggleUnidadesMenu()">
+                <span>🏥 Unidades Hospitalares Credenciadas</span>
+                <span id="unidades-caret">▼</span>
+            </button>
             
             <div id="unidades-dropdown" class="unidades-container">
-                <button class="btn-unidade" onclick="selecionarUnidadeSecretaria('hosp. agamenom magalhães', 'Hospital Agamenon Magalhães')">1. HOSPITAL AGAMENOM MAGALHÃES</button>
-                <button class="btn-unidade" onclick="selecionarUnidadeSecretaria('hosp. barão de lucena', 'Hospital Barão de Lucena')">2. HOSPITAL BARÃO DE LUCENA</button>
-                <button class="btn-unidade" onclick="selecionarUnidadeSecretaria('hosp. da restauração', 'Hospital da Restauração')">3. HOSPITAL DA RESTAURAÇÃO</button>
-                <button class="btn-unidade" onclick="selecionarUnidadeSecretaria('hosp. getulio vargas', 'Hospital Getúlio Vargas')">4. HOSPITAL GETULIO VARGAS</button>
-                <button class="btn-unidade" onclick="selecionarUnidadeSecretaria('hosp. otavio de freitas', 'Hospital Otávio de Freitas')">5. HOSPITAL OTAVIO DE FREITAS</button>
-                <button class="btn-unidade" onclick="selecionarUnidadeSecretaria('hosp. regional do agreste', 'Hospital Regional do Agreste')">6. HOSPITAL REGIONAL DO AGRESTE</button>
+                <button class="btn-unidade" onclick="selecionarUnidadeSecretaria('hosp. agamenom magalhães', 'Hosp. Agamenon Magalhães')">1. Hosp. Agamenon Magalhães (HAM)</button>
+                <button class="btn-unidade" onclick="selecionarUnidadeSecretaria('hosp. barão de lucena', 'Hosp. Barão de Lucena')">2. Hosp. Barão de Lucena (HBL)</button>
+                <button class="btn-unidade" onclick="selecionarUnidadeSecretaria('hosp. da restauração', 'Hosp. da Restauração')">3. Hosp. da Restauração (HR)</button>
+                <button class="btn-unidade" onclick="selecionarUnidadeSecretaria('hosp. getulio vargas', 'Hosp. Getúlio Vargas')">4. Hosp. Getúlio Vargas (HGV)</button>
+                <button class="btn-unidade" onclick="selecionarUnidadeSecretaria('hosp. otavio de freitas', 'Hosp. Otávio de Freitas')">5. Hosp. Otávio de Freitas (HOF)</button>
+                <button class="btn-unidade" onclick="selecionarUnidadeSecretaria('hosp. regional do agreste', 'Hosp. Regional do Agreste')">6. Hosp. Regional do Agreste (HRA)</button>
             </div>
 
-            <button class="btn btn-danger" style="width: 100%; margin-top: 15px;" onclick="logout()">Sair do Sistema</button>
+            <div style="margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 15px; display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn btn-purple" style="width: 100%; font-size: 14px;" onclick="visualizarDashboardConsolidado()">📊 Dashboard Consolidado (Toda Rede)</button>
+                <button class="btn btn-danger" style="width: 100%; margin-top: 10px;" onclick="logout()">Sair do Sistema</button>
+            </div>
         </div>
     </div>
 
+    <!-- TELA 3: ALTERAR SENHA -->
     <div id="screen-alterar-senha" class="screen">
-        <div class="secretaria-box" style="max-width: 380px;">
-            <h2 style="text-align: center;" id="pwd-title-head">Alterar Senha</h2>
-            <p style="color: var(--text-sub); text-align: center; font-size: 11px; margin-bottom: 15px;" id="pwd-user-label"></p>
+        <div class="secretaria-box" style="max-width: 400px;">
+            <h2 style="text-align: center; margin-bottom: 5px;" id="pwd-title-head">Alterar Senha</h2>
+            <p style="color: var(--text-sub); text-align: center; font-size: 12px; margin-bottom: 20px;" id="pwd-user-label"></p>
             
             <div class="form-group">
                 <label>Senha Atual:</label>
-                <input type="password" id="pwd-current">
+                <input type="password" id="pwd-current" placeholder="Digite a senha atual">
             </div>
-            <div class="form-group">
+            <div class="form-group" style="margin-top: 15px;">
                 <label>Nova Senha:</label>
-                <input type="password" id="pwd-new">
+                <input type="password" id="pwd-new" placeholder="Mínimo 6 caracteres">
             </div>
             <div class="form-group">
                 <label>Confirmar Nova Senha:</label>
-                <input type="password" id="pwd-confirm">
+                <input type="password" id="pwd-confirm" placeholder="Repita a nova senha">
             </div>
             
-            <button class="btn btn-success" style="width: 100%; margin-top: 10px;" onclick="executarAlteracaoSenha()">Salvar Nova Senha</button>
-            <button class="btn btn-secondary" style="width: 100%; margin-top: 8px;" onclick="cancelarAlteracaoSenha()">Voltar</button>
+            <div style="margin-top: 25px; display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn btn-success" style="width: 100%; font-size: 14px;" onclick="executarAlteracaoSenha()">Salvar Nova Senha</button>
+                <button class="btn btn-secondary" style="width: 100%;" onclick="cancelarAlteracaoSenha()">Voltar</button>
+            </div>
         </div>
     </div>
 
+    <!-- TELA 4: HOME (TABELA E DASHBOARD) -->
     <div id="screen-home" class="screen">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 10px; gap: 8px;">
-            <h2 id="home-title" style="margin: 0; font-size: 1.1rem;">Painel de Monitoramento</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 15px; gap: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <h2 id="home-title" style="margin: 0; font-size: 1.3rem; color: var(--text-title);">Painel de Monitoramento</h2>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                 <span id="user-display-name" style="font-size: 11px; color: var(--text-sub); font-weight: bold;"></span>
+            </div>
         </div>
         
-        <div class="header-controls">
-            <div class="selector-group" style="display: flex; gap: 15px; align-items: flex-start;">
-                <div style="display: flex; flex-direction: column;">
-                    <label for="select-exercicio" style="margin-bottom: 4px;">Exercício</label>
-                    <select id="select-exercicio" onchange="alterarExercicio(this.value)" style="padding: 6px; font-size: 12px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
+        <!-- Controles da Tabela -->
+        <div class="header-controls" style="background: var(--card-dash); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <div class="selector-group" style="display: flex; gap: 15px; align-items: flex-start; flex-grow: 1;">
+                <div style="display: flex; flex-direction: column; min-width: 100px;">
+                    <label for="select-exercicio" style="margin-bottom: 4px;">Ano Exercício</label>
+                    <select id="select-exercicio" onchange="alterarExercicio(this.value)" style="padding: 8px; font-size: 13px;">
                         <option value="2025">2025</option>
                         <option value="2026" selected>2026</option>
-                        <option value="TOTAL">TOTAL</option>
+                        <option value="TOTAL">TOTAL (Histórico)</option>
                     </select>
                 </div>
 
-                <div style="display: flex; flex-direction: column;">
-                    <label for="select-competencia" style="margin-bottom: 4px;">Competência</label>
-                    <select id="select-competencia" onchange="alterarCompetencia(this.value)" style="padding: 6px; font-size: 12px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
+                <div style="display: flex; flex-direction: column; flex-grow: 1; min-width: 150px;">
+                    <label for="select-competencia" style="margin-bottom: 4px;">Mês Competência</label>
+                    <select id="select-competencia" onchange="alterarCompetencia(this.value)" style="padding: 8px; font-size: 13px;">
                         <option value="">Carregando...</option>
                     </select>
                 </div>
             </div>
-            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; width: auto; margin-left: 0;">
-                <button class="btn btn-success btn-sm" id="btn-adicionar-linha-main" onclick="abrirModalDuplicarLinha()">➕ Adicionar Linha</button>
+            
+            <div class="action-buttons" style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; width: auto; justify-content: flex-end;">
+                <button class="btn btn-success btn-sm" id="btn-adicionar-linha-main" onclick="abrirModalDuplicarLinha()">➕ Nova Linha</button>
+                <button class="btn btn-primary btn-sm" id="btn-gerenciar-dados" onclick="goToForm()">✏️ Gerenciar</button>
                 <button class="btn btn-purple btn-sm" onclick="exportarTabelaExcelXLSX()">📊 Excel</button>
-                <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨️ PDF</button>
-                <button class="btn btn-primary btn-sm" id="btn-gerenciar-dados" onclick="goToForm()">Gerenciar</button>
-                <button class="btn btn-danger btn-sm" onclick="voltarParaMenuOuLogin()">Sair</button>
+                <button class="btn btn-secondary btn-sm" onclick="window.print()">🖨️ Imprimir PDF</button>
             </div>
         </div>
 
+        <!-- Visão 1: TABELA DE DADOS -->
         <div id="normal-table-container" class="table-responsive">
             <table id="main-data-table">
                 <thead>
                     <tr>
-                        <th>Serviço</th>
-                        <th>Unidade</th>
-                        <th>Competência</th>
-                        <th>Tipo de Processo</th>
-                        <th>Forma de Pagamento</th>
-                        <th>Monitoramento</th>
-                        <th>Processo SEI N.: Auditoria</th>
-                        <th>SEI - Status (Robô) Último do Fluxo</th>
-                        <th>Valor Apresentado</th>
-                        <th>Valor Glosado</th>
-                        <th>Valor Aprovado</th>
-                        <th>Data Publicação</th>
-                        <th>Data Envio p/ Coopanest-PE</th>
-                        <th>Data de Retorno</th>
-                        <th>Recibo N°</th>
-                        <th>Atesto Fiscal</th>
-                        <th>Orçamento - PF</th>
-                        <th>Número PD - Gerada</th>
-                        <th>Ordem Bancária (OB)</th>
-                        <th>Status da PD - Banco</th>
-                        <th>Valor do Contrato</th>
-                        <th>Saldo do Contrato</th>
-                        <th>Ações / SEI</th>
+                        <th style="width: 120px;">Serviço</th>
+                        <th style="width: 100px;">Unidade</th>
+                        <th style="width: 90px;">Competência</th>
+                        <th style="width: 80px;">Tipo</th>
+                        <th style="width: 80px;">Pagamento</th>
+                        <th style="width: 100px;">Monitoramento</th>
+                        <th style="width: 110px;">Processo SEI</th>
+                        <th style="width: 150px;">Status SEI (Robô)</th>
+                        <th style="width: 100px;">Vlr Apresentado</th>
+                        <th style="width: 90px;">Vlr Glosado</th>
+                        <th style="width: 100px;">Vlr Aprovado</th>
+                        <th style="width: 80px;">Publicação</th>
+                        <th style="width: 80px;">Envio COOP</th>
+                        <th style="width: 80px;">Retorno</th>
+                        <th style="width: 80px;">Recibo</th>
+                        <th style="width: 60px;">Atesto</th>
+                        <th style="width: 100px;">Orçamento PF</th>
+                        <th style="width: 90px;">Nº PD</th>
+                        <th style="width: 90px;">OB (Banco)</th>
+                        <th style="width: 130px;">Status DGF</th>
+                        <th style="width: 100px;">Vlr Contrato</th>
+                        <th style="width: 100px;">Saldo Contrato</th>
+                        <th style="width: 90px;">Ações / Doc</th>
                     </tr>
                 </thead>
-                <tbody id="table-body"></tbody>
+                <tbody id="table-body">
+                    <tr><td colspan="23" style="text-align: center; padding: 30px; color: var(--text-sub);">Selecione o exercício e competência para carregar os dados.</td></tr>
+                </tbody>
             </table>
         </div>
 
-        <div id="dashboard-container" style="display: none;">
+        <!-- Visão 2: DASHBOARD INFOGRÁFICO -->
+        <div id="dashboard-container" style="display: none; animation: fadeIn 0.4s;">
             <div class="dashboard-title" id="dashboard-main-title">DASHBOARD DE MONITORAMENTO</div>
             
-            <div style="background: var(--card-dash); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-                <strong style="font-size: 11px; color: var(--text-sub); width: 100%;">FILTROS DO DASHBOARD:</strong>
+            <div style="background: var(--card-dash); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);">
+                <div style="width: 100%; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 5px;">
+                    <strong style="font-size: 12px; color: #3498db; text-transform: uppercase; letter-spacing: 1px;">🔍 Filtros Dinâmicos do Dashboard:</strong>
+                </div>
                 
-                <div style="display: flex; flex-direction: column;">
-                    <label style="font-size: 10px; font-weight: bold; color: var(--text-sub);">Ano do Exercício:</label>
-                    <select id="dash-filter-ano" onchange="aoMudarAnoDashboard(this.value)" style="padding: 5px; font-size: 11px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
+                <div style="display: flex; flex-direction: column; min-width: 120px;">
+                    <label style="font-size: 11px; font-weight: bold; color: var(--text-sub); margin-bottom: 3px;">Ano Exercício:</label>
+                    <select id="dash-filter-ano" onchange="aoMudarAnoDashboard(this.value)" style="padding: 6px; font-size: 12px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
                         <option value="TODOS">TODOS OS ANOS</option>
                         <option value="2025">2025</option>
                         <option value="2026">2026</option>
                     </select>
                 </div>
 
-                <div style="display: flex; flex-direction: column;">
-                    <label style="font-size: 10px; font-weight: bold; color: var(--text-sub);">Competência:</label>
-                    <select id="dash-filter-competencia" onchange="renderDashboardUnidade()" style="padding: 5px; font-size: 11px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
+                <div style="display: flex; flex-direction: column; flex-grow: 1; min-width: 180px;">
+                    <label style="font-size: 11px; font-weight: bold; color: var(--text-sub); margin-bottom: 3px;">Competência:</label>
+                    <select id="dash-filter-competencia" onchange="renderDashboardUnidade()" style="padding: 6px; font-size: 12px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
                         <option value="">TODAS AS COMPETÊNCIAS</option>
                     </select>
                 </div>
 
-                <div style="display: flex; flex-direction: column;">
-                    <label style="font-size: 10px; font-weight: bold; color: var(--text-sub);">Serviço:</label>
-                    <select id="dash-filter-servico" onchange="renderDashboardUnidade()" style="padding: 5px; font-size: 11px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
+                <div style="display: flex; flex-direction: column; flex-grow: 1; min-width: 180px;">
+                    <label style="font-size: 11px; font-weight: bold; color: var(--text-sub); margin-bottom: 3px;">Serviço:</label>
+                    <select id="dash-filter-servico" onchange="renderDashboardUnidade()" style="padding: 6px; font-size: 12px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
                         <option value="">TODOS OS SERVIÇOS</option>
                     </select>
                 </div>
 
-                <div style="display: flex; flex-direction: column;">
-                    <label style="font-size: 10px; font-weight: bold; color: var(--text-sub);">Status:</label>
-                    <select id="dash-filter-status" onchange="renderDashboardUnidade()" style="padding: 5px; font-size: 11px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
+                <div style="display: flex; flex-direction: column; min-width: 180px;">
+                    <label style="font-size: 11px; font-weight: bold; color: var(--text-sub); margin-bottom: 3px;">Status Pagamento (DGF):</label>
+                    <select id="dash-filter-status" onchange="renderDashboardUnidade()" style="padding: 6px; font-size: 12px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
                         <option value="">TODOS OS STATUS</option>
-                        <option value="EM ANDAMENTO">EM ANDAMENTO</option>
-                        <option value="PAGO">PAGO</option>
-                        <option value="AGUARDANDO SEFAZ">AGUARDANDO SEFAZ</option>
                         <option value="AGUARDANDO Nº DO SEI">AGUARDANDO Nº DO SEI</option>
-                        <option value="AGUARDANDO ASSINATURA DO ATESTO">AGUARDANDO ASSINATURA DO ATESTO</option>
                         <option value="EM PROCESSO DE AUDITORIA">EM PROCESSO DE AUDITORIA</option>
                         <option value="AGUARDANDO ENVIO DO RECIBO (COOPANEST)">AGUARDANDO ENVIO DO RECIBO (COOPANEST)</option>
+                        <option value="AGUARDANDO ASSINATURA DO ATESTO">AGUARDANDO ASSINATURA DO ATESTO</option>
+                        <option value="AGUARDANDO SEFAZ">AGUARDANDO SEFAZ / LIQUIDAÇÃO</option>
+                        <option value="PAGO">✅ PAGO (OB Emitida)</option>
                     </select>
                 </div>
             </div>
 
+            <!-- Grid de Cards KPi -->
             <div class="dash-cards-grid">
-                <div class="dash-card"><div class="label">Ano Exercício</div><div class="number" id="dash-card-ano" style="color:#f1c40f;">2026</div></div>
-                <div class="dash-card"><div class="label">Competência</div><div class="number" id="dash-card-comp" style="color:#3498db;">TODAS</div></div>
-                <div class="dash-card"><div class="label">Serviço</div><div class="number" id="dash-card-servico" style="color:#9b59b6;">TODOS</div></div>
-                <div class="dash-card"><div class="label">Status</div><div class="number" id="dash-card-status" style="color:#1abc9c;">GERAL</div></div>
-                <div class="dash-card"><div class="label">Nº Total Processos</div><div class="number" id="dash-total-proc">0</div></div>
-                <div class="dash-card"><div class="label">Valores Apresentados</div><div class="number" id="dash-total-val" style="color: #2ecc71;">R$ 0,00</div></div>
-                <div class="dash-card"><div class="label">Valores Glosados</div><div class="number" id="dash-total-glo" style="color: #e74c3c;">R$ 0,00</div></div>
-                <div class="dash-card"><div class="label">Valores Aprovados</div><div class="number" id="dash-valor-aprovado" style="color: #3498db;">R$ 0,00</div></div>
-                <div class="dash-card"><div class="label">Valores Pagos</div><div class="number" id="dash-valor-pago" style="color: #27ae60;">R$ 0,00</div></div>
-                <div class="dash-card"><div class="label">Valores a Pagar</div><div class="number" id="dash-valor-a-pagar" style="color: #e67e22;">R$ 0,00</div></div>
-                <div class="dash-card"><div class="label">Processos Atestados</div><div class="number" id="dash-atestados" style="color: #9b59b6;">0</div></div>
+                <div class="dash-card" style="border-left: 3px solid #f1c40f;"><div class="label">Ano Filtro</div><div class="number" id="dash-card-ano" style="color:#f1c40f;">-</div></div>
+                <div class="dash-card" style="border-left: 3px solid #3498db;"><div class="label">Competência</div><div class="number" id="dash-card-comp" style="color:#3498db;">-</div></div>
+                <div class="dash-card"><div class="label">Nº Processos</div><div class="number" id="dash-total-proc">0</div></div>
+                <div class="dash-card"><div class="label">Vlrs Apresentados</div><div class="number" id="dash-total-val" style="color: #2ecc71;">R$ 0,00</div></div>
+                <div class="dash-card"><div class="label">Vlrs Glosados</div><div class="number" id="dash-total-glo" style="color: #e74c3c;">R$ 0,00</div></div>
+                <div class="dash-card" style="background: rgba(52, 152, 219, 0.1);"><div class="label">Vlrs Aprovados (Líquido)</div><div class="number" id="dash-valor-aprovado" style="color: #f8fafc;">R$ 0,00</div></div>
+                <div class="dash-card" style="background: rgba(46, 204, 113, 0.15); border-color: #2ecc71;"><div class="label">Total Pago</div><div class="number" id="dash-valor-pago" style="color: #2ecc71;">R$ 0,00</div></div>
+                <div class="dash-card" style="background: rgba(230, 126, 34, 0.15); border-color: #e67e22;"><div class="label">Total A Pagar</div><div class="number" id="dash-valor-a-pagar" style="color: #e67e22;">R$ 0,00</div></div>
+                <div class="dash-card"><div class="label">Proc. Atestados</div><div class="number" id="dash-atestados" style="color: #9b59b6;">0</div></div>
                 <div class="dash-card"><div class="label">Média Envio ➔ OB</div><div class="number" id="dash-tempo-medio" style="color: #3498db;">0 dias</div></div>
+                <div class="dash-card"><div class="label">% Glosa</div><div class="number" id="dash-perc-glosa" style="color: #e74c3c;">0%</div></div>
+                <div class="dash-card"><div class="label">% Pago</div><div class="number" id="dash-perc-pago" style="color: #2ecc71;">0%</div></div>
             </div>
 
             <div class="dash-query-box">
-                <h3 style="margin-top: 0; font-size: 13px; color: var(--text-title);">🔍 Consulta Rápida de Indicadores</h3>
+                <h3 style="margin-top: 0; font-size: 14px; color: var(--text-title);">🔍 Consulta Rápida de Indicadores (Filtros Ativos)</h3>
                 <div class="form-group" style="margin-bottom: 0;">
-                    <select id="dash-query-select" onchange="executarConsultaDashboard(this.value)">
+                    <select id="dash-query-select" onchange="executarConsultaDashboard(this.value)" style="border-color: #3498db;">
                         <option value="">-- Selecione uma Pergunta Rápida --</option>
-                        <option value="total_valor_apresentado">Qual é o valor total apresentado acumulado?</option>
-                        <option value="total_valor_glosado">Qual é o valor total glosado acumulado?</option>
-                        <option value="total_valor_aprovado">Qual é o valor total aprovado (líquido) para o hospital?</option>
-                        <option value="status_atesto_fiscal">Quantos processos já foram efetivamente ATESTADOS?</option>
-                        <option value="processos_pagos">Quantos processos e qual valor total já foram efetivamente PAGOS?</option>
-                        <option value="atestedos_a_pagar">Processos atestados aguardando pagamento (Em Andamento)</option>
+                        <option value="total_valor_apresentado">💰 Qual é o valor total apresentado acumulado?</option>
+                        <option value="total_valor_glosado">📉 Qual é o valor total glosado acumulado?</option>
+                        <option value="total_valor_aprovado">✅ Qual é o valor total aprovado (líquido)?</option>
+                        <option value="status_atesto_fiscal">✍️ Quantos processos já foram efetivamente ATESTADOS?</option>
+                        <option value="processos_pagos">💸 Quantos processos e qual valor total já foram PAGOS?</option>
+                        <option value="atestedos_a_pagar">⏳ Processos atestados aguardando pagamento (Saldo)</option>
                     </select>
                 </div>
                 <div id="query-result" class="query-result-box">
-                    <h4 id="query-result-title" style="margin: 0 0 5px 0; font-size: 12px; color: var(--text-title);"></h4>
-                    <p id="query-result-desc" style="margin: 0; font-size: 15px; font-weight: bold; color: #2ecc71;"></p>
+                    <h4 id="query-result-title" style="margin: 0 0 8px 0; font-size: 12px; color: var(--text-title); text-transform: uppercase;">Resultados:</h4>
+                    <p id="query-result-desc" style="margin: 0; font-size: 16px; font-weight: bold; color: #2ecc71;"></p>
                 </div>
             </div>
 
-            <div style="background: var(--card-dash); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <h3 style="margin-top: 0; font-size: 13px;">Visão Geral dos Registros</h3>
-                <div class="table-responsive">
-                    <table>
+            <div style="background: var(--card-dash); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                <h3 style="margin-top: 0; font-size: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 15px;">📋 Visão Geral dos Registros Filtrados</h3>
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table style="font-size: 10px; min-width: 900px;">
                         <thead>
                             <tr>
                                 <th>Serviço</th>
@@ -532,12 +620,11 @@
                                 <th>Ano</th>
                                 <th>Nº SEI</th>
                                 <th>Valor Apresentado</th>
-                                <th>Valor Glosado</th>
                                 <th>Valor Aprovado</th>
-                                <th>Atesto Fiscal</th>
-                                <th>PD Gerada</th>
+                                <th>Atesto</th>
+                                <th>Nº PD</th>
                                 <th>Ordem Pagto (OB)</th>
-                                <th>Status Pagamento</th>
+                                <th>Status DGF</th>
                             </tr>
                         </thead>
                         <tbody id="dash-summary-table"></tbody>
@@ -547,64 +634,90 @@
         </div>
     </div>
 
+    <!-- TELA 5: FORMULÁRIO DE GERENCIAMENTO -->
     <div id="screen-form" class="screen">
-        <h2>Gerenciar Informações (<span id="competencia-atual-titulo"></span>)</h2>
-        <p style="color: var(--text-sub); font-size: 12px;">Selecione a linha para atualizar as informações.</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <h2 style="margin: 0;">Gerenciar Registro (<span id="competencia-atual-titulo" style="color: #3498db;"></span>)</h2>
+        </div>
         
-        <div class="form-group">
-            <label>Selecione a Linha (Serviço):</label>
-            <select id="select-row" onchange="carregarDadosLinhaFormulario()"></select>
+        <p style="color: var(--text-sub); font-size: 13px; margin-bottom: 20px; background: var(--card-dash); padding: 10px; border-radius: 4px; border: 1px solid var(--border-color);">
+            <strong>Passo 1:</strong> Selecione a linha (serviço) que deseja editar.<br>
+            <strong>Passo 2:</strong> Atualize os campos necessários.<br>
+            <strong>Passo 3:</strong> Clique em 'Salvar Alterações' no final da página.
+        </p>
+        
+        <div class="form-group" style="background: rgba(52, 152, 219, 0.1); padding: 15px; border-radius: 6px; border: 1px solid #3498db; margin-bottom: 20px;">
+            <label style="color: var(--text-title); font-size: 13px;">🎯 Selecione a Linha (Serviço) para Editar:</label>
+            <select id="select-row" onchange="carregarDadosLinhaFormulario()" style="border-color: #3498db; font-weight: bold;"></select>
         </div>
 
-        <div class="form-group"><label>Serviço:</label><input type="text" id="field-servico" readonly></div>
-        <div class="form-group"><label>Unidade:</label><input type="text" id="field-unidade" readonly></div>
-        <div class="form-group"><label>Tipo de Processo:</label><input type="text" id="field-tipo"></div>
-        <div class="form-group">
-            <label>Forma de Pagamento:</label>
-            <select id="field-forma-pagamento">
-                <option value="">-- Selecione --</option>
-                <option value="TAC">TAC</option>
-                <option value="ORDINÁRIO">ORDINÁRIO</option>
-            </select>
-        </div>
-        <div class="form-group"><label>Monitoramento:</label><input type="text" id="field-monitoramento" readonly></div>
-        <div class="form-group"><label>Processo SEI N.º:</label><input type="text" id="field-sei" oninput="avaliarStatusDGFAutomatico()"></div>
-        <div class="form-group"><label>SEI - Status (Robô):</label><input type="text" id="field-sei-status" readonly></div>
-        <div class="form-group"><label>Valor Apresentado:</label><input type="text" id="field-valor-ap" value="R$ 0,00" oninput="aplicarMascaraMoeda(this); calcularValorAprovado(); avaliarStatusDGFAutomatico();"></div>
-        <div class="form-group"><label>Valor Glosado:</label><input type="text" id="field-valor-gl" value="R$ 0,00" oninput="aplicarMascaraMoeda(this); calcularValorAprovado(); avaliarStatusDGFAutomatico();"></div>
-        <div class="form-group"><label>Valor Aprovado:</label><input type="text" id="field-valor-aprov" value="R$ 0,00" readonly></div>
-        <div class="form-group"><label>Data Publicação:</label><input type="date" id="field-data-publicacao" onchange="avaliarStatusDGFAutomatico()"></div>
-        <div class="form-group"><label>Data Envio p/ Coopanest-PE:</label><input type="date" id="field-data-envio" onchange="avaliarStatusDGFAutomatico()"></div>
-        <div class="form-group"><label>Data de Retorno:</label><input type="date" id="field-data-retorno" onchange="avaliarStatusDGFAutomatico()"></div>
-        <div class="form-group"><label>Recibo N.º:</label><input type="text" id="field-recibo"></div>
-        <div class="form-group">
-            <label>Atesto Fiscal:</label>
-            <select id="field-atesto-fiscal" onchange="tratarMudancaAtesto(this.value)">
-                <option value="NÃO">NÃO</option>
-                <option value="SIM">SIM</option>
-            </select>
-        </div>
-        <div class="form-group"><label>ORÇAMENTO - PF:</label><input type="text" id="field-orcamento-uge"></div>
-        <div class="form-group"><label>NÚMERO PD - GERADA:</label><input type="text" id="field-pd-uge" oninput="avaliarStatusDGFAutomatico()"></div>
-        <div class="form-group"><label>ORDEM BANCÁRIA (OB):</label><input type="text" id="field-ob-uge" oninput="avaliarStatusDGFAutomatico()"></div>
-        <div class="form-group">
-            <label>STATUS DA PD - BANCO (DGF):</label>
-            <input type="text" id="field-status-dgf" readonly style="font-weight: bold; color: #3498db;">
-        </div>
-        <div class="form-group"><label>Valor do Contrato:</label><input type="text" id="field-valor-contrato" value="R$ 0,00" oninput="aplicarMascaraMoeda(this);"></div>
-        <div class="form-group"><label>Saldo do Contrato:</label><input type="text" id="field-saldo-contrato" value="R$ 0,00" oninput="aplicarMascaraMoeda(this);"></div>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div class="form-group"><label>Serviço:</label><input type="text" id="field-servico" readonly></div>
+            <div class="form-group"><label>Unidade Hospitalar:</label><input type="text" id="field-unidade" readonly></div>
 
-        <div style="display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;">
-            <button class="btn btn-success" onclick="abrirModalDuplicarLinha()">➕ Adicionar Linha</button>
-            <button class="btn btn-success" onclick="saveData()">Salvar</button>
-            <button class="btn btn-warning" onclick="editData()">Editar</button>
-            <button class="btn btn-danger" onclick="deleteData()">Excluir</button>
-            <button class="btn btn-purple" id="btn-form-download-sei" style="display: none;" onclick="solicitarDownloadPdfSEIForm()">📄 PDF SEI</button>
-            <button class="btn btn-secondary" onclick="goToHome()">Voltar</button>
+            <div class="form-group"><label>Tipo de Processo:</label><input type="text" id="field-tipo" readonly></div>
+            <div class="form-group">
+                <label>Forma de Pagamento:</label>
+                <select id="field-forma-pagamento">
+                    <option value="">-- Selecione --</option>
+                    <option value="TAC">TAC</option>
+                    <option value="ORDINÁRIO">ORDINÁRIO</option>
+                    <option value="CONTRATO">CONTRATO</option>
+                </select>
+            </div>
+
+            <div class="form-group"><label>Monitoramento:</label><input type="text" id="field-monitoramento"></div>
+            <div class="form-group"><label>Processo SEI N.º (Somente nº):</label><input type="text" id="field-sei" placeholder="Ex: 0006.2026..." oninput="avaliarStatusDGFAutomatico()"></div>
+
+            <div class="form-group"><label>SEI - Último Status (Robô):</label><input type="text" id="field-sei-status" readonly placeholder="Atualizado automaticamente"></div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; background: var(--card-dash); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+                <div class="form-group" style="margin:0;"><label style="color: #2ecc71;">Apresentado:</label><input type="text" id="field-valor-ap" value="R$ 0,00" style="color: #2ecc71; font-weight: bold;" oninput="aplicarMascaraMoeda(this); calcularValorAprovado(); avaliarStatusDGFAutomatico();" onfocus="this.select()"></div>
+                <div class="form-group" style="margin:0;"><label style="color: #e74c3c;">Glosado:</label><input type="text" id="field-valor-gl" value="R$ 0,00" style="color: #e74c3c; font-weight: bold;" oninput="aplicarMascaraMoeda(this); calcularValorAprovado(); avaliarStatusDGFAutomatico();" onfocus="this.select()"></div>
+                <div class="form-group" style="margin:0;"><label style="color: #3498db;">Aprovado:</label><input type="text" id="field-valor-aprov" value="R$ 0,00" style="color: #3498db; font-weight: bold;" readonly></div>
+            </div>
+
+            <div class="form-group"><label>Data Publicação:</label><input type="date" id="field-data-publicacao" onchange="avaliarStatusDGFAutomatico()"></div>
+            <div class="form-group"><label>Envio Coopanest:</label><input type="date" id="field-data-envio" onchange="avaliarStatusDGFAutomatico()"></div>
+            <div class="form-group"><label>Data Retorno:</label><input type="date" id="field-data-retorno" onchange="avaliarStatusDGFAutomatico()"></div>
+
+            <div class="form-group"><label>Recibo N.º:</label><input type="text" id="field-recibo"></div>
+            <div class="form-group">
+                <label style="color: #8e44ad; font-weight: bold;">✍️ Atesto Fiscal (Requer Senha):</label>
+                <select id="field-atesto-fiscal" style="border-color: #8e44ad; font-weight: bold;" onchange="tratarMudancaAtesto(this.value)">
+                    <option value="NÃO">❌ NÃO</option>
+                    <option value="SIM">✅ SIM</option>
+                </select>
+            </div>
+
+            <div class="form-group"><label>Orçamento PF:</label><input type="text" id="field-orcamento-uge"></div>
+            <div class="form-group"><label>Nº PD Gerada:</label><input type="text" id="field-pd-uge" oninput="avaliarStatusDGFAutomatico()"></div>
+            <div class="form-group"><label>OB (Banco):</label><input type="text" id="field-ob-uge" oninput="avaliarStatusDGFAutomatico()"></div>
+
+            <div class="form-group">
+                <label>STATUS DA PD - BANCO (DGF):</label>
+                <input type="text" id="field-status-dgf" readonly style="font-weight: bold; color: #f1c40f; background: rgba(241, 196, 15, 0.1); border-color: #f1c40f;">
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                <div class="form-group"><label>Valor do Contrato:</label><input type="text" id="field-valor-contrato" value="R$ 0,00" oninput="aplicarMascaraMoeda(this);"></div>
+                <div class="form-group"><label>Saldo do Contrato:</label><input type="text" id="field-saldo-contrato" value="R$ 0,00" oninput="aplicarMascaraMoeda(this);"></div>
+            </div>
         </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 25px; flex-wrap: wrap; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 15px; background: var(--bg-card); position: sticky; bottom: 0; padding-bottom: 10px; z-index: 10;">
+            <button class="btn btn-warning" style="margin:0;" onclick="editData()" id="btn-form-edit">Habilitar Edição</button>
+            <button class="btn btn-danger" style="margin:0;" onclick="deleteData()" id="btn-form-delete">🗑️ Limpar Linha</button>
+            <button class="btn btn-purple" id="btn-form-download-sei" style="display: none; margin:0;" onclick="solicitarDownloadPdfSEIForm()">📄 Gerar PDF SEI</button>
+            <button class="btn btn-success" style="margin:0; font-size: 15px; padding: 10px 25px;" onclick="saveData()" id="btn-form-save">💾 Salvar Alterações</button>
+        </div>
+        <div style="height: 20px;"></div>
     </div>
 </div>
 
+<!-- =========================================================================
+     JAVASCRIPT (LÓGICA CLIENT-SIDE COMPLETA)
+     ========================================================================= -->
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbwdkH03kEMmy-Sk2FFdBj9WMRcs6RMf9DUaO-cFqUHI_r2K-EemMNSq6sCQBRWzIwCB/exec";
 
@@ -627,7 +740,7 @@
     const exerciciosECompetencias = {
         "2025": ["NOVEMBRO.2025", "DEZEMBRO.2025", "NOV.2025", "DEZ.2025"],
         "2026": ["JANEIRO.2026", "FEVEREIRO.2026", "MARÇO.2026", "ABRIL.2026", "MAIO.2026", "JUNHO.2026", "JULHO.2026", "AGOSTO.2026", "SETEMBRO.2026", "OUTUBRO.2026", "NOVEMBRO.2026", "DEZEMBRO.2026"],
-        "TOTAL": ["TOTAL", "NOVEMBRO.2025", "DEZEMBRO.2025", "JANEIRO.2026", "FEVEREIRO.2026", "MARÇO.2026", "ABRIL.2026", "MAIO.2026", "JUNHO.2026", "JULHO.2026", "AGOSTO.2026", "SETEMBRO.2026", "OUTUBRO.2026", "NOVEMBRO.2026", "DEZEMBRO.2026"]
+        "TOTAL": ["TOTAL"]
     };
 
     let credentials = {
@@ -645,11 +758,63 @@
 
     function padronizarNomeCompetencia(str) {
         if (!str) return "";
-        return str.toString()
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .toUpperCase()
-            .trim();
+        let s = str.toString().trim().toUpperCase();
+        
+        // Mapeamento e substituição de meses por extenso
+        const mesesExtensoMap = [
+            { id: "JANEIRO", rx: /^(JAN|JANEIRO)/ },
+            { id: "FEVEREIRO", rx: /^(FEV|FEVEREIRO)/ },
+            { id: "MARÇO", rx: /^(MAR|MARÇO|MARCO)/ },
+            { id: "ABRIL", rx: /^(ABR|ABRIL)/ },
+            { id: "MAIO", rx: /^(MAI|MAIO)/ },
+            { id: "JUNHO", rx: /^(JUN|JUNHO)/ },
+            { id: "JULHO", rx: /^(JUL|JULHO)/ },
+            { id: "AGOSTO", rx: /^(AGO|AGOSTO)/ },
+            { id: "SETEMBRO", rx: /^(SET|SETEMBRO)/ },
+            { id: "OUTUBRO", rx: /^(OUT|OUTUBRO)/ },
+            { id: "NOVEMBRO", rx: /^(NOV|NOVEMBRO)/ },
+            { id: "DEZEMBRO", rx: /^(DEZ|DEZEMBRO)/ }
+        ];
+
+        let partes = s.split(".");
+        let mesParte = partes[0].normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        let anoParte = partes.length > 1 ? "." + partes[partes.length - 1] : "";
+
+        for (let item of mesesExtensoMap) {
+            if (item.rx.test(mesParte)) {
+                return item.id + anoParte;
+            }
+        }
+
+        return s;
+    }
+
+    function atendeFiltroHospital(unidadePlanilha, targetHospital) {
+        if (!targetHospital || targetHospital === "") return true;
+        let u = (unidadePlanilha || "").toUpperCase().trim();
+        let target = targetHospital.toLowerCase().trim();
+        let labelTarget = credentials[target] ? credentials[target].label.toUpperCase() : target.toUpperCase();
+
+        if (target.includes("agamenom") || target.includes("ham")) {
+            return u === "HAM" || u.includes("AGAMENOM") || u.includes("AGAMENON");
+        }
+        if (target.includes("lucena") || target.includes("hbl")) {
+            return u === "HBL" || u.includes("BARÃO DE LUCENA") || u.includes("BARAO DE LUCENA") || u.includes("LUCENA");
+        }
+        if (target.includes("restauração") || target.includes("restauracao") || target.includes("hr")) {
+            return u === "HR" || u.includes("RESTAURAÇÃO") || u.includes("RESTAURACAO");
+        }
+        if (target.includes("getulio") || target.includes("hgv")) {
+            return u === "HGV" || u.includes("GETÚLIO") || u.includes("GETULIO");
+        }
+        if (target.includes("freitas") || target.includes("hof")) {
+            return u === "HOF" || u.includes("OTÁVIO DE FREITAS") || u.includes("OTAVIO DE FREITAS") || u.includes("FREITAS");
+        }
+        if (target.includes("agreste") || target.includes("hra")) {
+            return u === "HRA" || u.includes("AGRESTE");
+        }
+
+        return u.includes(labelTarget) || labelTarget.includes(u);
     }
 
     function showSpinner() { document.getElementById('global-loading').style.display = 'flex'; }
@@ -670,11 +835,15 @@
         const btnLake = document.getElementById('btn-flutuante-lakehouse');
         const btnFixedDash = document.getElementById('btn-fixed-dash');
         const btnPwd = document.getElementById('btn-flutuante-pwd');
+        const btnTopVoltar = document.getElementById('btn-top-voltar-painel');
+        const btnTopLogout = document.getElementById('btn-top-logout');
 
         if (screenId !== 'screen-login') {
             btnLogs.style.display = 'block';
+            btnTopLogout.style.display = 'inline-block';
         } else {
             btnLogs.style.display = 'none';
+            btnTopLogout.style.display = 'none';
         }
 
         if (screenId === 'screen-home') {
@@ -683,6 +852,12 @@
         } else {
             btnFixedDash.style.display = 'none';
             btnPwd.style.display = 'none';
+        }
+
+        if (screenId === 'screen-form') {
+            btnTopVoltar.style.display = 'inline-block';
+        } else {
+            btnTopVoltar.style.display = 'none';
         }
 
         if (screenId === 'screen-secretaria-unidades' && (usuarioLogado === "secretaria de saúde" || usuarioLogado === "visão executiva")) {
@@ -842,18 +1017,10 @@
 
     function ordenarCompetenciasCronologicamente(lista) {
         const ordemMeses = {
-            "JAN": 1, "JANEIRO": 1,
-            "FEV": 2, "FEVEREIRO": 2,
-            "MAR": 3, "MARÇO": 3, "MARCO": 3,
-            "ABR": 4, "ABRIL": 4,
-            "MAI": 5, "MAIO": 5,
-            "JUN": 6, "JUNHO": 6,
-            "JUL": 7, "JULHO": 7,
-            "AGO": 8, "AGOSTO": 8,
-            "SET": 9, "SETEMBRO": 9,
-            "OUT": 10, "OUTUBRO": 10,
-            "NOV": 11, "NOVEMBRO": 11,
-            "DEZ": 12, "DEZEMBRO": 12
+            "JAN": 1, "JANEIRO": 1, "FEV": 2, "FEVEREIRO": 2, "MAR": 3, "MARÇO": 3, "MARCO": 3,
+            "ABR": 4, "ABRIL": 4, "MAI": 5, "MAIO": 5, "JUN": 6, "JUNHO": 6,
+            "JUL": 7, "JULHO": 7, "AGO": 8, "AGOSTO": 8, "SET": 9, "SETEMBRO": 9,
+            "OUT": 10, "OUTUBRO": 10, "NOV": 11, "NOVEMBRO": 11, "DEZ": 12, "DEZEMBRO": 12
         };
 
         return lista.sort((a, b) => {
@@ -896,18 +1063,14 @@
 
         const filtrarAbasPorExercicio = (abas) => {
             if (!abas || abas.length === 0) return [];
-            if (exercicioSelecionado === "TOTAL") {
-                return abas;
-            }
+            if (exercicioSelecionado === "TOTAL") return abas;
+            
             return abas.filter(aba => {
                 let a = aba.toUpperCase().trim();
                 let e2025 = a.includes("2025") || a.includes(".25") || a.includes("/25") || a.includes("25");
                 
-                if (exercicioSelecionado === "2025") {
-                    return e2025;
-                } else if (exercicioSelecionado === "2026") {
-                    return !e2025;
-                }
+                if (exercicioSelecionado === "2025") return e2025;
+                else if (exercicioSelecionado === "2026") return !e2025;
                 return true;
             });
         };
@@ -928,13 +1091,13 @@
 
             ordenados.forEach(m => {
                 const opt = document.createElement('option');
-                opt.value = m;
-                opt.textContent = m;
+                opt.value = padronizarNomeCompetencia(m);
+                opt.textContent = padronizarNomeCompetencia(m);
                 selectComp.appendChild(opt);
             });
 
-            if (!competenciaSelecionada || !ordenados.includes(competenciaSelecionada)) {
-                competenciaSelecionada = ordenados[0];
+            if (!competenciaSelecionada || !ordenados.map(padronizarNomeCompetencia).includes(competenciaSelecionada)) {
+                competenciaSelecionada = padronizarNomeCompetencia(ordenados[0]);
             }
             selectComp.value = competenciaSelecionada;
             
@@ -974,7 +1137,7 @@
     }
 
     function alterarCompetencia(novaComp) {
-        competenciaSelecionada = novaComp;
+        competenciaSelecionada = padronizarNomeCompetencia(novaComp);
         localStorage.setItem('simpa_competencia', competenciaSelecionada);
         carregarDadosDaPlanilha(novaComp);
     }
@@ -1044,12 +1207,10 @@
         .then(res => res.json())
         .then(res => {
             hideSpinner();
-            
             if (credentials[usuarioLogado]) {
                 if (tipoSenhaEmAlteracao === 'login') credentials[usuarioLogado].pass = nw;
                 else credentials[usuarioLogado].atestoPass = nw;
             }
-            
             alert("Senha alterada e sincronizada para todos os dispositivos!");
             registrarLog("-", `Alteração realizada na ${tipoSenhaEmAlteracao === 'login' ? 'Senha de Login' : 'Senha de Atesto'}`);
             cancelarAlteracaoSenha();
@@ -1084,15 +1245,7 @@
         let targetHospital = (usuarioLogado === "secretaria de saúde" || usuarioLogado === "coopanest" || usuarioLogado === "visão executiva" || usuarioLogado === "auditoria") ? visualizandoUnidadeSecretaria : usuarioLogado;
         
         if (targetHospital && targetHospital !== "") {
-            let nomeFiltroHospital = credentials[targetHospital] ? credentials[targetHospital].label.toUpperCase() : targetHospital.toUpperCase();
-            
-            dadosFiltrados = dadosFiltrados.filter(r => {
-                let u = (r.unidade || "").toUpperCase().trim();
-                if (targetHospital === "hosp. getulio vargas" || nomeFiltroHospital.includes("GETÚLIO") || nomeFiltroHospital.includes("GETULIO")) {
-                    return u === "HGV" || u.includes("GETÚLIO") || u.includes("GETULIO");
-                }
-                return u.includes(nomeFiltroHospital) || nomeFiltroHospital.includes(u);
-            });
+            dadosFiltrados = dadosFiltrados.filter(r => atendeFiltroHospital(r.unidade, targetHospital));
         }
 
         if (competenciaSelecionada && competenciaSelecionada !== "TOTAL") {
@@ -1129,7 +1282,7 @@
             tr.innerHTML = `
                 <td>${row.servico || '-'}</td>
                 <td>${row.unidade || '-'}</td>
-                <td>${formatarDataBR(row.competencia)}</td>
+                <td>${formatarDataBR(padronizarNomeCompetencia(row.competencia))}</td>
                 <td>${row.tipo || '-'}</td>
                 <td>${row.formaPagamento || '-'}</td>
                 <td>${row.monitoramento || '-'}</td>
@@ -1182,19 +1335,21 @@
             let compSet = new Set();
             
             if (filterAno === "2025") {
-                compSet.add("NOVEMBRO.2025");
-                compSet.add("DEZEMBRO.2025");
+                planilhaDados.slice(0, 12).forEach(r => {
+                    if (r.competencia && String(r.competencia).trim() !== '') {
+                        compSet.add(padronizarNomeCompetencia(r.competencia));
+                    }
+                });
+            } else if (filterAno === "2026") {
+                planilhaDados.slice(-12).forEach(r => {
+                    if (r.competencia && String(r.competencia).trim() !== '') {
+                        compSet.add(padronizarNomeCompetencia(r.competencia));
+                    }
+                });
             } else {
                 planilhaDados.forEach(r => {
                     if (r.competencia && String(r.competencia).trim() !== '') {
-                        let compUpper = String(r.competencia).trim().toUpperCase();
-                        let e2025 = compUpper.includes("2025") || compUpper.includes(".25") || compUpper.includes("/25");
-                        
-                        if (filterAno === "2026" && !e2025) {
-                            compSet.add(compUpper);
-                        } else if (filterAno === "TODOS" || filterAno === "TODOS OS ANOS") {
-                            compSet.add(compUpper);
-                        }
+                        compSet.add(padronizarNomeCompetencia(r.competencia));
                     }
                 });
             }
@@ -1202,8 +1357,8 @@
             let ordenados = ordenarCompetenciasCronologicamente(Array.from(compSet));
             ordenados.forEach(c => {
                 const opt = document.createElement('option');
-                opt.value = c;
-                opt.textContent = c;
+                opt.value = padronizarNomeCompetencia(c);
+                opt.textContent = padronizarNomeCompetencia(c);
                 selectComp.appendChild(opt);
             });
             selectComp.value = valAtualComp;
@@ -1211,10 +1366,11 @@
     }
 
     function extrairAnoDoRegistro(r) {
-        if (planilhaDados && planilhaDados.length >= 12) {
+        if (planilhaDados && planilhaDados.length >= 24) {
             let index = planilhaDados.indexOf(r);
-            if (index !== -1 && index >= planilhaDados.length - 12) {
-                return 2026;
+            if (index !== -1) {
+                if (index < 12) return 2025;
+                if (index >= planilhaDados.length - 12) return 2026;
             }
         }
 
@@ -1230,9 +1386,7 @@
         let obStr = String(r.obUge || '');
         if (seiStr.includes('2025') || pdStr.startsWith('2025') || obStr.startsWith('2025')) return 2025;
 
-        if (strUpper === "NOVEMBRO" || strUpper === "DEZEMBRO" || strUpper === "NOV" || strUpper === "DEZ") {
-            return 2025;
-        }
+        if (strUpper === "NOVEMBRO" || strUpper === "DEZEMBRO" || strUpper === "NOV" || strUpper === "DEZ") return 2025;
 
         return 2026;
     }
@@ -1255,7 +1409,6 @@
             });
     }
 
-    // PONTO 2: Atualização e Sincronização Dinâmica do Dashboard
     function renderDashboardUnidade() {
         const dashContainer = document.getElementById('dashboard-container');
         if (!dashContainer || dashContainer.style.display === 'none') return;
@@ -1268,15 +1421,7 @@
             let nomeFiltroHospital = credentials[targetHospital] ? credentials[targetHospital].label.toUpperCase() : targetHospital.toUpperCase();
             nomeHospLabel = nomeFiltroHospital;
             
-            unidadeDados = unidadeDados.filter(r => {
-                let u = (r.unidade || "").toUpperCase().trim();
-                if (!u) return false;
-                
-                if (targetHospital === "hosp. getulio vargas" || nomeFiltroHospital.includes("GETÚLIO") || nomeFiltroHospital.includes("GETULIO")) {
-                    return u === "HGV" || u.includes("GETÚLIO") || u.includes("GETULIO");
-                }
-                return u.includes(nomeFiltroHospital) || nomeFiltroHospital.includes(u);
-            });
+            unidadeDados = unidadeDados.filter(r => atendeFiltroHospital(r.unidade, targetHospital));
         }
 
         document.getElementById('dashboard-main-title').innerText = `DASHBOARD DE MONITORAMENTO - ${nomeHospLabel}`;
@@ -1286,19 +1431,24 @@
         const filterServico = document.getElementById('dash-filter-servico').value;
         const filterStatus = document.getElementById('dash-filter-status').value;
 
-        if (filterAno && filterAno !== "TODOS") {
-            unidadeDados = unidadeDados.filter(r => {
-                let anoReg = extrairAnoDoRegistro(r);
-                return String(anoReg) === String(filterAno);
-            });
-        }
-
-        if (filterAno === "2025" && filterComp) {
-            let compUpper = padronizarNomeCompetencia(filterComp);
-            if (compUpper.includes("NOV") || compUpper.includes("NOVEMBRO")) {
-                unidadeDados = unidadeDados.slice(0, 6);
-            } else if (compUpper.includes("DEZ") || compUpper.includes("DEZEMBRO")) {
-                unidadeDados = unidadeDados.slice(-6);
+        if (filterAno === "2025") {
+            unidadeDados = unidadeDados.slice(0, 12);
+            if (filterComp) {
+                let compUpper = padronizarNomeCompetencia(filterComp);
+                if (compUpper.includes("NOV") || compUpper.includes("NOVEMBRO")) {
+                    unidadeDados = unidadeDados.slice(0, 6);
+                } else if (compUpper.includes("DEZ") || compUpper.includes("DEZEMBRO")) {
+                    unidadeDados = unidadeDados.slice(6, 12);
+                }
+            }
+        } else if (filterAno === "2026") {
+            unidadeDados = unidadeDados.slice(-12);
+            if (filterComp) {
+                let compSelUpper = padronizarNomeCompetencia(filterComp);
+                unidadeDados = unidadeDados.filter(r => {
+                    let c = padronizarNomeCompetencia(r.competencia);
+                    return c === compSelUpper;
+                });
             }
         } else if (filterComp) {
             let compSelUpper = padronizarNomeCompetencia(filterComp);
@@ -1347,18 +1497,17 @@
         }
 
         if (!registrosTabelaDash || registrosTabelaDash.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: var(--text-sub); padding: 15px;">Nenhum registro encontrado para os filtros selecionados.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-sub); padding: 15px;">Nenhum registro encontrado para os filtros selecionados.</td></tr>`;
         } else {
             registrosTabelaDash.forEach(r => {
                 let anoExibicao = extrairAnoDoRegistro(r) || '-';
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${r.servico || '-'}</td>
-                    <td>${formatarDataBR(r.competencia)}</td>
+                    <td>${formatarDataBR(padronizarNomeCompetencia(r.competencia))}</td>
                     <td>${anoExibicao}</td>
                     <td>${r.sei || '-'}</td>
                     <td>${formatarMoedaBR(r.valorAp)}</td>
-                    <td>${formatarMoedaBR(r.valorGl)}</td>
                     <td>${formatarMoedaBR(r.valorAprov)}</td>
                     <td>${r.atestoFiscal || 'NÃO'}</td>
                     <td>${r.pdUge || '-'}</td>
@@ -1399,9 +1548,7 @@
         
         document.getElementById('dash-card-ano').innerText = filterAno || "TODOS";
         document.getElementById('dash-card-comp').innerText = filterComp || "TODAS";
-        document.getElementById('dash-card-servico').innerText = filterServico ? (filterServico.length > 12 ? filterServico.substring(0,12)+"..." : filterServico) : "TODOS";
-        document.getElementById('dash-card-status').innerText = filterStatus ? (filterStatus.length > 12 ? filterStatus.substring(0,12)+"..." : filterStatus) : "GERAL";
-
+        
         document.getElementById('dash-total-proc').innerText = unidadeDados.length;
         document.getElementById('dash-total-val').innerText = formatarMoedaBR(totalValAp);
         document.getElementById('dash-total-glo').innerText = formatarMoedaBR(totalValGl);
@@ -1410,6 +1557,12 @@
         document.getElementById('dash-valor-a-pagar').innerText = formatarMoedaBR(valorAPagar);
         document.getElementById('dash-atestados').innerText = countAtestados;
         document.getElementById('dash-tempo-medio').innerText = mediaDias + ' dias';
+
+        // Porcentagens calculadas
+        const percGlosa = totalValAp > 0 ? ((totalValGl / totalValAp) * 100).toFixed(1) : 0;
+        const percPago = totalValAprov > 0 ? ((valorPago / totalValAprov) * 100).toFixed(1) : 0;
+        document.getElementById('dash-perc-glosa').innerText = percGlosa + '%';
+        document.getElementById('dash-perc-pago').innerText = percPago + '%';
 
         renderizarTabela(unidadeDados);
 
@@ -1475,7 +1628,7 @@
         <div class="titulo-doc">ATESTO DE SERVIÇO PRESTADO</div>
 
         <div class="texto-atesto">
-        <p>Atesto, para os devidos fins, que os serviços de anestesiologia constantes no <strong>Recibo nº ${dados.recibo || '-'}</strong>, validados por meio do <strong>Relatório de Auditoria GEAUD/CTAPE (89659601)</strong>, referentes à competência <strong>${formatarDataBR(dados.competencia)}</strong>, foram devidamente prestados em conformidade com o <strong>Termo de Credenciamento nº 169/2025</strong>, encontrando-se em conformidade com as disposições contratuais.</p>
+        <p>Atesto, para os devidos fins, que os serviços de anestesiologia constantes no <strong>Recibo nº ${dados.recibo || '-'}</strong>, validados por meio do <strong>Relatório de Auditoria GEAUD/CTAPE (89659601)</strong>, referentes à competência <strong>${formatarDataBR(padronizarNomeCompetencia(dados.competencia))}</strong>, foram devidamente prestados em conformidade com o <strong>Termo de Credenciamento nº 169/2025</strong>, encontrando-se em conformidade com as disposições contratuais.</p>
 
         <p>Declaro que os valores atestados correspondem ao montante aprovado em auditoria, estando a documentação fiscal regular quanto aos aspectos formais e materiais, apta à liquidação da despesa.</p>
 
@@ -1487,7 +1640,7 @@
         <table>
         <tr><th>Unidade Hospitalar:</th><td>${dados.unidade || '-'}</td></tr>
         <tr><th>Serviço:</th><td>${dados.servico || '-'}</td></tr>
-        <tr><th>Competência:</th><td>${formatarDataBR(dados.competencia)}</td></tr>
+        <tr><th>Competência:</th><td>${formatarDataBR(padronizarNomeCompetencia(dados.competencia))}</td></tr>
         <tr><th>Tipo de Processo:</th><td>${dados.tipo || '-'}</td></tr>
         <tr><th>Forma de Pagamento:</th><td>${dados.formaPagamento || '-'}</td></tr>
         <tr><th>Monitoramento:</th><td>${dados.monitoramento || '-'}</td></tr>
@@ -1513,7 +1666,6 @@
         printWindow.document.close();
     }
 
-    // PONTO 3: Validação de Segurança e Status para Download do PDF SEI
     function solicitarDownloadPdfSEITabela(idLinha) {
         linhaSelecionadaParaPdfSEI = planilhaDados.find(r => String(r.id) === String(idLinha));
         if (!linhaSelecionadaParaPdfSEI) return;
@@ -1581,7 +1733,7 @@
             saldoContrato: desformatarMoeda(document.getElementById('field-saldo-contrato').value),
             servico: document.getElementById('field-servico').value,
             unidade: document.getElementById('field-unidade').value,
-            competencia: competenciaSelecionada,
+            competencia: padronizarNomeCompetencia(competenciaSelecionada),
             sei: document.getElementById('field-sei').value,
             monitoramento: document.getElementById('field-monitoramento').value,
             seiStatus: document.getElementById('field-sei-status').value
@@ -1629,7 +1781,7 @@
         if(!rowExistente) return;
 
         if(confirm("Deseja limpar os lançamentos desta linha? (Serviço, Unidade, Competência e Tipo de Processo serão mantidos)")) {
-            let compAlvo = expandirNomeMesCompetencia(competenciaSelecionada || rowExistente.competencia || "");
+            let compAlvo = padronizarNomeCompetencia(competenciaSelecionada || rowExistente.competencia || "");
 
             const dadosPreservados = {
                 id: rowExistente.id,
@@ -1690,14 +1842,7 @@
         let targetHospital = (usuarioLogado === "secretaria de saúde" || usuarioLogado === "coopanest" || usuarioLogado === "visão executiva" || usuarioLogado === "auditoria") ? visualizandoUnidadeSecretaria : usuarioLogado;
         
         if (targetHospital && targetHospital !== "") {
-            let nomeFiltroHospital = credentials[targetHospital] ? credentials[targetHospital].label.toUpperCase() : targetHospital.toUpperCase();
-            dadosFiltrados = dadosFiltrados.filter(r => {
-                let u = (r.unidade || "").toUpperCase().trim();
-                if (targetHospital === "hosp. getulio vargas" || nomeFiltroHospital.includes("GETÚLIO") || nomeFiltroHospital.includes("GETULIO")) {
-                    return u === "HGV" || u.includes("GETÚLIO") || u.includes("GETULIO");
-                }
-                return u.includes(nomeFiltroHospital) || nomeFiltroHospital.includes(u);
-            });
+            dadosFiltrados = dadosFiltrados.filter(r => atendeFiltroHospital(r.unidade, targetHospital));
         }
 
         if (!dadosFiltrados || dadosFiltrados.length === 0) {
@@ -1855,9 +2000,9 @@
 
     function aplicarRegrasBloqueioCamposPorPerfil() {
         document.getElementById('select-row').disabled = false;
-        document.getElementById('field-servico').readOnly = false;
-        document.getElementById('field-unidade').readOnly = false;
-        document.getElementById('field-tipo').readOnly = false;
+        document.getElementById('field-servico').readOnly = true;
+        document.getElementById('field-unidade').readOnly = true;
+        document.getElementById('field-tipo').readOnly = true;
         document.getElementById('field-forma-pagamento').disabled = false;
         document.getElementById('field-monitoramento').readOnly = false;
         document.getElementById('field-sei').readOnly = false;
@@ -1938,7 +2083,6 @@
         document.getElementById('field-valor-aprov').value = formatarMoedaBR(aprov);
     }
 
-    // PONTO 1: Tratamento Dinâmico de Usuário na Modal de Atesto Fiscal
     function tratarMudancaAtesto(val) {
         if (val === "SIM" && estadoAnteriorAtesto !== "SIM") {
             const selectAssinante = document.getElementById('atesto-usuario');
@@ -1999,7 +2143,6 @@
         XLSX.writeFile(wb, `Monitoramento_${competenciaSelecionada}.xlsx`);
     }
 
-    // PONTO 4: Registro Abrangente de Histórico de Logs
     function registrarLog(linhaId, acao, nomeAssinante = "") {
         const payload = {
             acao: "registrarLogServidor",
@@ -2065,7 +2208,7 @@
 
         logsParaExibir.forEach(l => {
             const card = document.createElement('div');
-            card.style.cssText = "background: var(--bg-card); padding: 6px; border-radius: 4px; margin-bottom: 4px; border: 1px solid var(--border-color);";
+            card.style.cssText = "background: var(--bg-card); padding: 8px; border-radius: 4px; margin-bottom: 6px; border: 1px solid var(--border-color);";
             card.innerHTML = `<strong>${l.usuario}</strong> - <span style="color: var(--text-sub);">${l.dataHora}</span><br><span>${l.acao}</span>`;
             div.appendChild(card);
         });
@@ -2224,7 +2367,7 @@
         } else if (tipo === "status_atesto_fiscal") {
             const filtrados = unidadeDados.filter(r => (r.atestoFiscal || '').toUpperCase().trim() === "SIM");
             resultTitle.innerText = "Processos Atestados:";
-            resultDesc.innerText = `${filtrados.length} processo(s) atestado(s).`;
+            resultDesc.innerText = `${filtrados.length} processo(s) atestedos.`;
             resultBox.style.display = 'block';
         } else if (tipo === "processos_pagos") {
             const filtrados = unidadeDados.filter(r => (r.statusDgf || '').toUpperCase().trim() === "PAGO" || (r.obUge && String(r.obUge).trim() !== ""));
@@ -2260,14 +2403,7 @@
         let dadosFiltrados = planilhaDados;
 
         if (targetHospital && targetHospital !== "") {
-            let nomeFiltroHospital = credentials[targetHospital] ? credentials[targetHospital].label.toUpperCase() : targetHospital.toUpperCase();
-            dadosFiltrados = dadosFiltrados.filter(r => {
-                let u = (r.unidade || "").toUpperCase().trim();
-                if (targetHospital === "hosp. getulio vargas" || nomeFiltroHospital.includes("GETÚLIO") || nomeFiltroHospital.includes("GETULIO")) {
-                    return u === "HGV" || u.includes("GETÚLIO") || u.includes("GETULIO");
-                }
-                return u.includes(nomeFiltroHospital) || nomeFiltroHospital.includes(u);
-            });
+            dadosFiltrados = dadosFiltrados.filter(r => atendeFiltroHospital(r.unidade, targetHospital));
         }
 
         const divLista = document.getElementById('lista-linhas-para-duplicar');
@@ -2293,34 +2429,63 @@
     }
 
     function expandirNomeMesCompetencia(str) {
-        if (!str) return "";
-        let comp = str.toString().trim().toUpperCase();
+        return padronizarNomeCompetencia(str);
+    }
 
-        const mapaMeses = {
-            "JAN": "JANEIRO",
-            "FEV": "FEVEREIRO",
-            "MAR": "MARÇO",
-            "MARCO": "MARÇO",
-            "ABR": "ABRIL",
-            "MAI": "MAIO",
-            "JUN": "JUNHO",
-            "JUL": "JULHO",
-            "AGO": "AGOSTO",
-            "SET": "SETEMBRO",
-            "OUT": "OUTUBRO",
-            "NOV": "NOVEMBRO",
-            "DEZ": "DEZEMBRO"
+    function criarLinhaDoZero() {
+        fecharModalDuplicarLinha();
+        let targetHospital = (usuarioLogado === "secretaria de saúde" || usuarioLogado === "coopanest" || usuarioLogado === "visão executiva" || usuarioLogado === "auditoria") ? visualizandoUnidadeSecretaria : usuarioLogado;
+        let nomeHospital = credentials[targetHospital] ? credentials[targetHospital].label : "UNIDADE HOSPITALAR";
+
+        let compAlvo = padronizarNomeCompetencia(competenciaSelecionada || "JANEIRO.2026");
+
+        const novoRegistro = {
+            servico: "NOVO SERVIÇO ANESTESIA",
+            unidade: nomeHospital,
+            competencia: compAlvo,
+            tipo: "ORDINÁRIO",
+            formaPagamento: "CONTRATO",
+            monitoramento: "",
+            sei: "",
+            seiStatus: "",
+            valorAp: 0,
+            valorGl: 0,
+            valorAprov: 0,
+            dataPublicacao: "",
+            dataEnvio: "",
+            dataRetorno: "",
+            recibo: "",
+            atestoFiscal: "NÃO",
+            orcamentoUge: "",
+            pdUge: "",
+            obUge: "",
+            statusDgf: "AGUARDANDO Nº DO SEI",
+            valorContrato: 0,
+            saldoContrato: 0
         };
 
-        for (let key in mapaMeses) {
-            if (comp.startsWith(key)) {
-                let partes = comp.split(".");
-                let ano = partes.length > 1 ? "." + partes[partes.length - 1] : "";
-                return mapaMeses[key] + ano;
-            }
-        }
+        const payload = {
+            acao: "processarDadosFormulario",
+            dados: novoRegistro,
+            competencia: competenciaSelecionada
+        };
 
-        return comp;
+        showSpinner();
+        fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(res => {
+            hideSpinner();
+            registrarLog("-", "Criou uma nova linha em branco do zero");
+            alert("Nova linha criada em branco com sucesso!");
+            carregarDadosDaPlanilha(competenciaSelecionada);
+        })
+        .catch(err => {
+            hideSpinner();
+            alert("Erro ao criar nova linha na planilha.");
+        });
     }
 
     function duplicarLinhaSelecionada(idLinha) {
@@ -2328,7 +2493,7 @@
         const linhaBase = planilhaDados.find(r => String(r.id) === String(idLinha));
         if (!linhaBase) return;
 
-        let compAlvo = expandirNomeMesCompetencia(competenciaSelecionada || linhaBase.competencia || "");
+        let compAlvo = padronizarNomeCompetencia(competenciaSelecionada || linhaBase.competencia || "");
 
         const novoRegistro = {
             servico: linhaBase.servico || "SERVIÇO",
