@@ -246,7 +246,7 @@
                 <option value="">-- Selecione uma Análise Estratégica --</option>
                 <option value="total_geral_apresentado">💰 Qual o valor total apresentado acumulado em toda a rede?</option>
                 <option value="total_geral_pago">✅ Quanto já foi efetivamente pago somando todas as unidades?</option>
-                <option value="processos_atestados_rede">✍️ Quantos processos na rede já possuem Atesto Fiscal confirmado?</option>
+                <option value="processos_atestados_rede">✍️ Quantos processos na rede já possuem Atesto Fiscal confirmed?</option>
                 <option value="hospital_maior_volume">🏥 Qual hospital possui o maior volume financeiro apresentado?</option>
                 <option value="pendencias_geral_sei">⚠️ Quantos processos em toda a rede estão sem número de SEI?</option>
                 <option value="maior_valor_glosado">📉 Qual hospital teve o maior valor absoluto glosado pela auditoria?</option>
@@ -423,7 +423,6 @@
             </div>
 
             <div style="margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 15px; display: flex; flex-direction: column; gap: 10px;">
-                <button class="btn btn-purple" style="width: 100%; font-size: 14px;" onclick="visualizarDashboardConsolidado()">📊 Dashboard Consolidado (Toda Rede)</button>
                 <button class="btn btn-danger" style="width: 100%; margin-top: 10px;" onclick="logout()">Sair do Sistema</button>
             </div>
         </div>
@@ -816,7 +815,11 @@
 
         if (screenId !== 'screen-login') {
             btnLogs.style.display = 'block';
-            btnTopLogout.style.display = 'inline-block';
+            if (screenId === 'screen-secretaria-unidades') {
+                btnTopLogout.style.display = 'none';
+            } else {
+                btnTopLogout.style.display = 'inline-block';
+            }
         } else {
             btnLogs.style.display = 'none';
             btnTopLogout.style.display = 'none';
@@ -987,6 +990,7 @@
             } else {
                 dashCont.style.display = 'none';
                 normCont.style.display = 'block';
+                carregarDadosDaPlanilha(competenciaSelecionada);
             }
         }
     }
@@ -1336,31 +1340,30 @@
     }
 
     function extrairAnoDoRegistro(r) {
-        if (planilhaDados && planilhaDados.length >= 12) {
-            let index = planilhaDados.indexOf(r);
-            if (index !== -1) {
-                if (index < 12) return 2025;
-                if (index >= planilhaDados.length - 12) return 2026;
+        let listaReferencia = (typeof dadosFiltradosDashboard !== 'undefined' && dadosFiltradosDashboard.length > 0)
+            ? dadosFiltradosDashboard
+            : planilhaDados;
+
+        if (listaReferencia && Array.isArray(listaReferencia)) {
+            let index = listaReferencia.indexOf(r);
+            if (index !== -1 && index < 12) {
+                return 2025; // Os primeiros 12 lançamentos são 2025 (6 nov, 6 dez)
             }
         }
 
-        let str = r.competencia || r.dataPublicacao || r.ano || "";
-        let strUpper = String(str).toUpperCase().trim();
-
-        if (strUpper.includes('2025') || strUpper.includes('/25') || strUpper.includes('.25')) return 2025;
-        if (strUpper.includes('2026') || strUpper.includes('/26') || strUpper.includes('.26')) return 2026;
-        if (strUpper.includes('2027') || strUpper.includes('/27') || strUpper.includes('.27')) return 2027;
+        let str = (r.competencia || r.dataPublicacao || r.abaOrigem || r.ano || "").toString().toUpperCase().trim();
+        if (str.includes('2025') || str.includes('/25') || str.includes('.25')) return 2025;
+        if (str.includes('2026') || str.includes('/26') || str.includes('.26')) return 2026;
+        if (str.includes('2027') || str.includes('/27') || str.includes('.27')) return 2027;
 
         let seiStr = String(r.sei || '');
         let pdStr = String(r.pdUge || '');
         let obStr = String(r.obUge || '');
         if (seiStr.includes('2025') || pdStr.startsWith('2025') || obStr.startsWith('2025')) return 2025;
 
-        if (strUpper === "NOVEMBRO" || strUpper === "DEZEMBRO" || strUpper === "NOV" || strUpper === "DEZ") return 2025;
-
         return 2026;
     }
-
+	
     function aoMudarAnoDashboard(ano) {
         exercicioSelecionado = ano;
         showSpinner();
@@ -1401,24 +1404,28 @@
         const filterServico = document.getElementById('dash-filter-servico').value;
         const filterStatus = document.getElementById('dash-filter-status').value;
 
+        // Mapeamento explícito para os 12 primeiros lançamentos de 2025 (1 a 6 = NOV, 7 a 12 = DEZ)
+        unidadeDados.forEach((r, idx) => {
+            if (idx < 6) {
+                r.competenciaMapped = "NOVEMBRO.2025";
+                r.anoMapped = 2025;
+            } else if (idx < 12) {
+                r.competenciaMapped = "DEZEMBRO.2025";
+                r.anoMapped = 2025;
+            } else {
+                r.anoMapped = 2026;
+                r.competenciaMapped = r.competencia || "2026";
+            }
+        });
+
         if (filterAno && filterAno !== "TODOS") {
-            unidadeDados = unidadeDados.filter(r => {
-                let anoReg = extrairAnoDoRegistro(r);
-                return String(anoReg) === String(filterAno);
-            });
+            unidadeDados = unidadeDados.filter(r => String(r.anoMapped) === String(filterAno));
         }
 
-        if (filterAno === "2025" && filterComp) {
-            let compUpper = padronizarNomeCompetencia(filterComp);
-            if (compUpper.includes("NOV") || compUpper.includes("NOVEMBRO")) {
-                unidadeDados = unidadeDados.slice(0, 6);
-            } else if (compUpper.includes("DEZ") || compUpper.includes("DEZEMBRO")) {
-                unidadeDados = unidadeDados.slice(6, 12);
-            }
-        } else if (filterComp) {
+        if (filterComp) {
             let compSelUpper = padronizarNomeCompetencia(filterComp);
             unidadeDados = unidadeDados.filter(r => {
-                let c = padronizarNomeCompetencia(r.competencia);
+                let c = padronizarNomeCompetencia(r.competenciaMapped || r.competencia);
                 if ((compSelUpper.includes("DEZ") || compSelUpper.includes("DEZEMBRO")) && (c.includes("DEZ") || c.includes("DEZEMBRO"))) return true;
                 if ((compSelUpper.includes("NOV") || compSelUpper.includes("NOVEMBRO")) && (c.includes("NOV") || c.includes("NOVEMBRO"))) return true;
                 if ((compSelUpper.includes("JAN") || compSelUpper.includes("JANEIRO")) && (c.includes("JAN") || c.includes("JANEIRO"))) return true;
@@ -1452,24 +1459,17 @@
         tableBody.innerHTML = '';
 
         let registrosTabelaDash = unidadeDados;
-        if (filterAno === "2025" && !filterComp) {
-            registrosTabelaDash = unidadeDados.filter(r => {
-                let st = (r.statusDgf || '').toUpperCase().trim();
-                let temSei = r.sei && String(r.sei).trim() !== "" && String(r.sei).trim() !== "-";
-                let valAp = desformatarMoeda(r.valorAp);
-                return st !== "AGUARDANDO Nº DO SEI" || temSei || valAp > 0;
-            });
-        }
 
         if (!registrosTabelaDash || registrosTabelaDash.length === 0) {
             tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-sub); padding: 15px;">Nenhum registro encontrado para os filtros selecionados.</td></tr>`;
         } else {
             registrosTabelaDash.forEach(r => {
-                let anoExibicao = extrairAnoDoRegistro(r) || '-';
+                let anoExibicao = r.anoMapped || extrairAnoDoRegistro(r) || '-';
+                let compExibicao = r.competenciaMapped || r.competencia;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${r.servico || '-'}</td>
-                    <td>${expandirNomeMesCompetencia(formatarDataBR(r.competencia))}</td>
+                    <td>${expandirNomeMesCompetencia(formatarDataBR(compExibicao))}</td>
                     <td>${anoExibicao}</td>
                     <td>${r.sei || '-'}</td>
                     <td>${formatarMoedaBR(r.valorAp)}</td>
