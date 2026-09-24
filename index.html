@@ -188,7 +188,8 @@
 
 <!-- Controles Fixos Superiores -->
 <div class="theme-toggle-top">
-    <button class="btn btn-danger btn-sm" id="btn-top-logout" style="display:none; margin:0;" onclick="voltarParaMenuOuLogin()">Sair / Voltar</button>
+    <button class="btn btn-secondary btn-sm" id="btn-top-voltar" style="display:none; margin:0;" onclick="voltarPaginaAnterior()">Voltar</button>
+    <button class="btn btn-danger btn-sm" id="btn-top-logout" style="display:none; margin:0;" onclick="logout()">Sair</button>
     <button class="btn btn-purple btn-sm" id="btn-fixed-dash" style="display:none; margin:0;" onclick="alternarVisaoDashboardFixo()">📊 Dash</button>
     <button class="btn btn-secondary btn-sm" id="btn-top-voltar-painel" style="display:none; margin:0;" onclick="goToHome()">Voltar ao Painel</button>
     <button class="btn btn-warning btn-sm" id="btn-theme-toggle" style="margin:0;" onclick="toggleTheme()">☀️ Claro</button>
@@ -812,17 +813,20 @@
         const btnPwd = document.getElementById('btn-flutuante-pwd');
         const btnTopVoltar = document.getElementById('btn-top-voltar-painel');
         const btnTopLogout = document.getElementById('btn-top-logout');
+        const btnTopVoltarNav = document.getElementById('btn-top-voltar');
 
         if (screenId !== 'screen-login') {
             btnLogs.style.display = 'block';
+            btnTopLogout.style.display = 'inline-block';
             if (screenId === 'screen-secretaria-unidades') {
-                btnTopLogout.style.display = 'none';
+                btnTopVoltarNav.style.display = 'none';
             } else {
-                btnTopLogout.style.display = 'inline-block';
+                btnTopVoltarNav.style.display = 'inline-block';
             }
         } else {
             btnLogs.style.display = 'none';
             btnTopLogout.style.display = 'none';
+            btnTopVoltarNav.style.display = 'none';
         }
 
         if (screenId === 'screen-home') {
@@ -1840,6 +1844,24 @@
         document.getElementById('home-title').innerText = "Painel de Monitoramento - " + nomeExibicao;
         switchScreen('screen-home');
         carregarCompetencias();
+    }
+
+    function voltarPaginaAnterior() {
+        if (document.getElementById('screen-home').classList.contains('active')) {
+            if (usuarioLogado === "secretaria de saúde" || usuarioLogado === "coopanest" || usuarioLogado === "visão executiva" || usuarioLogado === "auditoria") {
+                switchScreen('screen-secretaria-unidades');
+            } else {
+                logout();
+            }
+        } else if (document.getElementById('screen-form').classList.contains('active')) {
+            goToHome();
+        } else if (document.getElementById('screen-alterar-senha').classList.contains('active')) {
+            cancelarAlteracaoSenha();
+        } else if (document.getElementById('screen-pendente').classList.contains('active')) {
+            voltarParaMenuOuLogin();
+        } else {
+            window.history.back();
+        }
     }
 
     function voltarParaMenuOuLogin() {
